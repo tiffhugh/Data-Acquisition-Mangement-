@@ -1,0 +1,60 @@
+---
+title: "Assignment#1"
+output:
+  pdf_document: default
+  html_document: default
+date: "2024-08-28"
+---
+<h2>**Overview**</h2>                          
+In "The Ultimate Halloween Candy Power Ranking" (https://fivethirtyeight.com/videos/the-ultimate-halloween-candy-power-ranking/) 86 different brands of candy were ranked by peoples preference of candy they were given randomly generated match ups (ie starburst or snickers).The sample is a bit inconclusive as the survey was online and had 8,371 respondents. So the question is why do people prefer one type of candy? Is due to pricing? Sugar? Candy type? 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# Import dataset
+library(readr)
+candy_data <- read_csv("candy-data.csv")
+View(candy_data)
+```
+
+```{r setup1, include=FALSE}
+# create a visuliuzation of candy by winning percentage 
+#par(mar = c(5, 10, 4, 2))
+
+#barplot(height = candy_data$winpercent,        
+        names.arg = candy_data$competitorname,      
+        col = "purple",                           
+        xlab = "Win Percentage",                   
+        ylab = "Candy Name",                       
+        main = "Win Percentage by Candy",          
+        horiz = TRUE,
+        las = 1,
+        cex.names = 0.5,
+        cex.axis = 0.8,
+        space = 0.5) 
+#barplot()
+
+```
+<h3>**Candy Preference Frequency**</h3>
+This is not the best barplot but it shows candy names and the win percentage. The top five preferred candy is Reese’s Peanut Butter, Cup(84.2%), Reese’s Miniatures(81.9%), Twix(81.6%),Kit Kat (76.8%),and Snickers(76.7%). The theme that is arising is that most preferred candy contains chocolate. 
+
+```{r setup2, include=FALSE}
+# regression of winning percentage by sugar and price 
+model <- lm(winpercent ~ sugarpercent + pricepercent, data = candy_data)
+summary(model)
+```
+<h3>**Regression: Sugar and Price**</h3>
+Trying to determine why people prefer certain candies over other the author of the article looked at sugar percentage and the prices. I used a regression to determine how sugar and price would affect the winning percentage. For every 1 increase in sugar the winning percentage would increase by 6.7%; however given alpha of 0.05 the p-value of 0.23 is not statistically significant. For every 1 increase of price the winning percentage increase by 15%. With a given alpha of 0.05 the p-value of 0.0006 is statistically significant, but it could be a type I error where it is a false positive because given the context the prices of candy does not have much variance. We can also examine the r-squared which is 0.13 meaning only 13% of the variance in the winning percentage can be explained by sugar and price. 
+
+```{r setup3, include=FALSE}
+# regression for winning percentage by ingreidents
+model <- lm(winpercent ~ chocolate + fruity + caramel + peanutyalmondy + nougat + crispedricewafer + hard + bar+ pluribus, data = candy_data)
+summary(model)
+```
+<h3>**Regression:Descriptive Ingredient **</h3>
+Since sugar and price are not significant markers for determining candy preference, the author thought to look at the ingredients. Does the candy having fruits, caramel, peanuts, nougat,ect make it more preferable. The ingredients that were statistically significant were chocolate(0.00), fruity(0.008), and peanutyalmond(0.006) with a given alpha of 0.05. Meaning that for every 1 chocolate that went up the winning percentage went up by 19%. Every 1 fruit meant the winning percentage increased by 10%, and every 1 peanutualmond went up by 10%. This makes sense since the top preferred candies were chocolate, and three contained peanuts. 
+
+
+<h3>**Conclusion **</h3>
+In conclusion, the most popular Halloween candies were not determined by sugar percentage or price, but rather by their ingredients. Candies containing chocolate, peanuts or almonds, and fruit were associated with greater consumer satisfaction. These ingredients emerged as key factors in determining candy preference.
+
+To enhance this study, I would recommend including demographic information, such as age and gender, of the respondents. Different age groups might have distinct preferences, and sugar content could play a more significant role in those distinctions. Gender might also influence candy choices, adding another layer of complexity to the analysis. Additionally, since the respondents were anonymous, there could be underlying factors affecting candy preferences that remain unexplored. Further research could address these complexities, providing a more comprehensive understanding of what drives candy popularity 
