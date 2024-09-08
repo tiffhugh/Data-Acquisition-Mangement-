@@ -1,0 +1,185 @@
+---
+title: "Horror Movies"
+output: html_document
+date: "2024-09-07"
+---
+
+```{r setup, include=FALSE}
+#knitr::opts_chunk$set(echo = TRUE)
+#install.packages(c('DBI', 'RPostgres'))
+#library(DBI)
+#library(dplyr)
+#library(RPostgres)
+#con <- DBI::dbConnect(
+  #RPostgres::Postgres(),
+  #dbname = 'MovieRate',
+ # host = 'localhost',
+ # port = 1433, #i tried 5432 but still could not connect to sql server
+ # user = 'sa',
+ # password = ''  
+#)
+
+```
+<h2>**Overview**</h2>
+
+<h2>**2024 Horror Movies**</h2>  
+
+As October approaches, it’s time to curate the perfect horror movie watchlist to set the mood for spooky season. Not all horror films are created equal, and with subcategories like Supernatural, Psychological, and Mystery/Thriller, each brings its own unique brand of fright. To help narrow down the must-watch titles, I asked six family members to rate some of 2024's most popular horror movies on a scale of 1 to 5—where 1 means they weren’t impressed, and 5 signifies a must-see scare
+
+```{r setup1, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+#install.packages("dplyr")
+library(dplyr)
+# Imported SQL CSV file into markdown
+horror_rating <- read.csv("C:/Users/tiffh/Assignment#2/Results.csv")
+head(horror_rating)
+
+```
+<h2>**Movie Selection: Watched vs. Not Watched**</h2>  
+
+The selected horror movies included The Exorcism, Tarot, Immaculate, The Watchers, Oddity, and The Deliverance. When I created the dataset in SQL, the movies were initially assigned numbers, so I recoded it to associate each number with its corresponding title. However, not all family members watched every movie, leading to some missing ratings. My first step in the analysis was to explore the watched vs. not watched status for each film. 
+
+
+
+```{r setup2, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+#Checking for missing data in dataset
+which(horror_rating$ranking == 0)
+# In the 36 rankings, 12 were ranked zero meaning they have not been watched, it
+#would be intresting to see movies watched and not watched so recode for watchted
+# and not wacthed and including the movies full names so better when graphed
+
+#Recode with movie name
+movie_names <- c("The Exorcism", "Tarot", "Immaculate", "The Watchers", "Oddity", "The Deliverance")
+
+#Recode with watched and not watched 
+recode_movies <- function(x) {
+  ifelse(x == 0, "Not Watched", movie_names[x])
+}
+
+# Create df with watch staus
+movie_watched <- horror_rating %>%
+  mutate(MovieName = movie_names[movie_id], 
+    WatchedStatus = ifelse(ranking == 0, "Not Watched", "Watched")
+  ) %>%
+  select(participant_id, MovieName, WatchedStatus, ranking)
+
+print(movie_watched)
+
+
+```
+
+```{r setup3, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+#install.packages("gglots2")
+# Make visualization of watched status 
+#install.packages("ggplot2")
+library(ggplot2)
+library(dplyr)
+
+watched_counts <- movie_watched %>%
+  group_by(MovieName, WatchedStatus) %>%
+  summarise(Count = n(), .groups = 'drop')
+
+# Create the bar plot
+plot <- ggplot(watched_counts, aes(x = MovieName, y = Count, fill = WatchedStatus)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_fill_manual(values = c("Watched" = "purple", "Not Watched" = "pink")) +
+  labs(title = "Watched vs Not Watched Movies",
+       x = "Movie Name",
+       y = "Count") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Print the plot
+print(plot)
+
+
+```
+The bar plot displays the count of respondents who watched versus those who didn’t for each of the six movies. At least four people watched each movie, while two respondents missed one. To further investigate, I will calculate the average rating for each movie, excluding non-watchers. This approach ensures the ratings accurately reflect the opinions of those who actually viewed the films, providing a clearer picture of the movies' true reception.
+```{r setup4, include=TRUE}
+library(dplyr)
+#Create df with watched only
+watched_only <- subset(movie_watched, ranking > 0)
+
+print(watched_only)
+
+#average movie rank 
+
+average_rank <- watched_only %>%
+  group_by(MovieName) %>%
+  summarise(AverageRank = mean(ranking, na.rm = TRUE), .groups = 'drop')
+
+print(average_rank)
+
+
+#df with avg rank
+average_rank_df <- data.frame(
+  MovieName = c("Immaculate", "Oddity", "Tarot", "The Deliverance", "The Exorcism", "The Watchers"),
+  AverageRank = c(3.75, 3.00, 4.00, 3.75, 4.00, 2.50)
+)
+print(average_rank_df)
+
+#visualize
+ggplot(average_rank_df, aes(x = MovieName, y = AverageRank, fill = MovieName)) +
+  geom_bar(stat = "identity") +
+  scale_fill_brewer(palette = "Paired") +
+  theme_minimal() +
+  labs(title = "Average Rank Scores of Movies", x = "Movies", y = "Average Rank") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+
+
+```
+
+Based on the average rankings, Tarot and The Exorcism both received the highest rating of 4.00, indicating they were rated very favorably by viewers. There is little variance among Immaculate, Oddity, Tarot, The Deliverance, and The Exorcism, with scores ranging from 3.75 to 4.00. This small difference suggests that these movies were similarly well-received, though the distinction between 3.75 and 4.00 may warrant further investigation to understand the specific factors contributing to the variation. Oddity received a more average rating of 3.00, reflecting a more mixed response, while The Watchers had the lowest rating at 2.50. This suggests that The Watchers did not connect with the audience and may not be a suitable choice for those seeking high-quality horror films.
+
+<h2>**Subcategories*</h2>  
+One possible explanation for the differing ratings could be attributed to the subcategories of the movies. To categorize the films, I assigned the subcategories as follows: The Exorcism, Immaculate, and The Deliverance fall under "Supernatural Horror," while Oddity and Tarot are classified as "Psychological Horror." Lastly, The Watchers is categorized as "Mystery/Thriller." This classification may help explain the variations in average ratings among the films.
+
+```{r setup5, include=TRUE}
+# create subcategory of the movies 
+average_rank_df$Subcategory <- ifelse(average_rank_df$MovieName %in% c("The Exorcism", "Immaculate", "The Deliverance"), 
+ "Supernatural Horror", ifelse(average_rank_df$MovieName %in% c("Oddity", "Tarot"), 
+   "Psychological Horror", 
+                                             ifelse(average_rank_df$MovieName == "The Watchers", 
+                                                    "Mystery/Thriller", 
+                                                    NA)))
+
+print(average_rank_df)
+
+#Aggregate average rank by subcategory
+subcategory_avg <- aggregate(AverageRank ~ Subcategory, data = average_rank_df, FUN = mean)
+
+print(subcategory_avg)
+
+# linear regression 
+model <- lm(AverageRank ~ Subcategory, data = average_rank_df)
+summary(model)
+
+# Df with coefficients and confidence intervals
+coef_df <- data.frame(
+  Subcategory = c("Mystery/Thriller", "Psychological Horror", "Supernatural Horror"),
+  Estimate = c(1.0000, 1.0000, 1.3333),
+  StdError = c(0.4249, 0.5204, 0.4907)
+)
+
+# visulization
+ggplot(coef_df, aes(x = Subcategory, y = Estimate, fill = Subcategory)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_errorbar(aes(ymin = Estimate - StdError, ymax = Estimate + StdError), width = 0.2) +
+  theme_minimal() +
+  labs(title = "Estimated Average Rank by Subcategory", x = "Subcategory", y = "Estimated Average Rank") +
+  scale_fill_manual(values = c("Mystery/Thriller" = "lightblue", 
+                               "Psychological Horror" = "pink", 
+                               "Supernatural Horror" = "purple"))
+
+
+```
+The average ratings for the different subcategories of horror films reveal interesting trends. Mystery/Thriller has the lowest average rating at 2.50, primarily driven by the low rating of The Watchers, which is the only film in this category. In contrast, Psychological Horror received a more favorable average of 3.50, while Supernatural Horror leads with an average rating of 3.83. This suggests that the supernatural horror category is the most favored among viewers, especially when considering that it combines the higher ratings of The Exorcism, Immaculate, and The Deliverance, resulting in the highest overall ranking among the subcategories.
+
+I used linear regression to understand the relationship between average rankings of horror movies and their subcategories. The intercept value of 2.50 indicates the baseline average ranking for the reference category, which is the Mystery/Thriller subcategory.  The coefficient for Psychological Horror is 1.00, suggesting that movies in this category have an average ranking that is 1.00 higher than the baseline. However, the p-value 0.1504 indicates that this result is not statistically significant at alpha 0.05. This implies that there isn't strong evidence to conclude that Psychological Horror significantly improves the average ranking compared to the reference category. The coefficient for Supernatural Horror is 1.3333, indicating that films in this category have an average ranking that is 1.3333 higher than the baseline. The p-value of 0.0727 suggests that this result approaches significance, indicating a trend toward higher ratings for supernatural horror movies compared to Mystery/Thriller. Although it's not below the 0.05 threshold, it may still warrant attention.Overall, the analysis indicates that while both Psychological Horror and Supernatural Horror appear to improve average rankings relative to Mystery/Thriller, only Supernatural Horror shows a trend that might be significant, suggesting that viewers generally prefer supernatural elements in horror films over the mystery/thriller genre. The residuals indicate small deviations from the fitted values, suggesting a reasonably good fit of the model to the data.
+
+<h2>**Conclusion*</h2>
+In conclusion, the analysis of horror movie rankings by subcategory reveals that both Psychological Horror and Supernatural Horror tend to yield higher average rankings compared to Mystery/Thriller. Notably, only Supernatural Horror exhibits a potentially significant trend, suggesting a viewer preference for supernatural elements in horror films. The minimal deviations in the residuals indicate a good fit of the model to the data, reinforcing the findings. However, to gain a deeper understanding of participants' rankings, it is crucial to explore the reasons behind their scores, as relying solely on subcategories may not provide a comprehensive assessment. The presence of well-known actors like Avantika Vandanapu, Jacob Batalon, and Sydney Sweeney in the highest-ranking films may have influenced viewer ratings, alongside factors such as cinematography. Moving forward, expanding the sample size and gathering more detailed insights into participant rankings will significantly enhance this study on horror movie evaluations and provide a clearer picture of audience preferences in the genre.
+
