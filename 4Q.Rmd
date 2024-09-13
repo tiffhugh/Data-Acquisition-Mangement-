@@ -1,0 +1,126 @@
+---
+title: "4 Questions"
+output: html_document
+date: "2024-09-12"
+---
+<h2>**Question #1**</h2>
+```{r setup, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+#install.packages("tidyverse")
+library(tidyverse)
+# cvs import 
+major_list <- read.csv("C:/Users/tiffh/Downloads/4 Questions HW/majors-list.csv")
+head(major_list)
+# use str to filter DATA + STATA 
+data_stat_major <- major_list %>%
+  filter(str_detect(Major, "DATA") | str_detect(Major, "STATISTICS"))
+# View which majors have data or stats in name 
+data_stat_major
+```
+Management information systems and statistics,Computer programming and data 
+processing, and Statistics and decision science where the three majors that 
+contained data or statistics when filtered. They belong to the major category of 
+business and computers & mathematics. 
+<h2>**Question #2**</h2>
+```{r setup2, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+# Fruit name vector 
+fruit_name <- c("bell pepper", "bilberry", "blackberry", "blood orange", "blueberry", "cantaloupe", "chili pepper", "cloudberry", "elderberry", "lime", "lychee", "mulberry", "olive", "salal berry")
+
+print(fruit_name)
+# Fruit list assigned the fruit a number 
+fruit_number <- c(1,2,3,4,5,6,7,8,9,10,11,12,13,14)
+
+fruit_name <- c("bell pepper", "bilberry", "blackberry", "blood orange", "blueberry", "cantaloupe", "chili pepper", "cloudberry", "elderberry", "lime", "lychee", "mulberry", "olive", "salal berry")
+
+fruit_list = list(fruit_number,fruit_name)
+print(fruit_list)
+
+```
+I initially made a vector with just the fruit name, but you can also make a list 
+just by assigning the fruit to a number.
+
+<h2>**Question #3**</h2>
+For the questions lets assume that there a vector C("q","s","t","r") which is
+a string of " q s t r"
+
+1. (.)\1\1
+(.) = q
+/1 = refers to the first variable 
+So (.)\1\1 = qqq
+
+2. (.)(.)\\2\\1
+(.) = q
+(.) = s
+\\2 = refers to the second variables 
+\\1 = refers to first variable 
+Which means (.)(.)\\2\\1 = qssq
+
+3. (..)\1
+(..) = qs
+\1 = refers to first variables 
+Meaning (..)\1 = qsqs
+
+4. (.).\\1.\\1
+(.) = q
+. = s
+\\1 = refers to first variable 
+So (.).\\1.\\1 = qsqq
+
+5. (.)(.)(.).*\\3\\2\\1
+(.) = q
+(.) = s
+(.) = t
+.* = r
+\\3 = refers to third variable 
+\\2 = refers to second variable 
+\\1 = refers to first variable 
+So (.)(.)(.).*\\3\\2\\1 = qstrtsq
+
+<h2>**Question #4**</h2>
+```{r setup4, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+library(stringr)
+library(dplyr)
+# create a vector of 50 states 
+ 
+states <- c("alabama", "alaska", "arizona", "arkansas", "california", "colorado", 
+            "connecticut", "delaware", "florida", "georgia", "hawaii", "idaho", 
+            "illinois", "indiana", "iowa", "kansas", "kentucky", "louisiana", 
+            "maine", "maryland", "massachusetts", "michigan", "minnesota", 
+            "mississippi", "missouri", "montana", "nebraska", "nevada", 
+            "new hampshire", "new jersey", "new mexico", "new york", 
+            "north carolina", "north dakota", "ohio", "oklahoma", 
+            "oregon", "pennsylvania", "rhode island", "south carolina", 
+            "south dakota", "tennessee", "texas", "utah", "vermont", 
+            "virginia", "washington", "west virginia", "wisconsin", "wyoming")
+
+#Start and end with the same character
+str_subset(states, "^(.)((.*\\1$)|\\1?$)")
+
+
+# Contain a repeated pair of letters
+str_subset("mississippi", "([A-Za-z][A-Za-z]).*\\1")
+str_subset(states, "([A-Za-z][A-Za-z]).*\\1")
+
+
+#Contain one letter repeated in at least three places
+str_subset("alabama", "([a-z]).*\\1.*\\1")
+str_subset(states, "([a-z]).*\\1.*\\1")
+```
+
+For the last question I created a vector of the 50 states as word pool. alabama,
+alaska, arizona, and ohio are the four states that all begin and end with the 
+same letter. And mississippi is the only state with repeating letter "ss". Then
+there are 13 states(AL,AK,AR,CO,CT,IL,MA,MS,NJ,PA,
+TN,VA,WV) that have one letter that repeats at least three places. 
+
+
+
+
+**Reference**
+Q1. https://brshallo.github.io/r4ds_solutions/14-strings.html
+
+Q2. https://www.geeksforgeeks.org/r-lists/
+
+Q3/4.https://jrnold.github.io/r4ds-exercise-solutions/strings.html
