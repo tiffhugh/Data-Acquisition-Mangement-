@@ -1,0 +1,220 @@
+---
+title: 'Project #1'
+output: html_document
+date: "2024-09-20"
+---
+<h2>Overview</h2>    
+TXT files are important because of their simplicity and transparency, making it easy to view and edit data in a plain text format. While these features are beneficial, the downside is that in R, a dataset in TXT format may not be immediately compatible for analysis. For this project, I will be working with a TXT file containing chess tournament data and converting it into a CSV format, using the readr package for efficient data import and manipulation in R. This conversion ensures the dataset is structured properly for further analysis. Looking at the TXT file we can see that the first four lines contain headers which can be skipped to center the actual data. 
+
+<h2>Import TXT File </h2> 
+```{r setup, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+#install.packages("readr")
+library(readr)
+
+# import raw txt file from Github
+url <- 'https://raw.githubusercontent.com/tiffhugh/Data-Acquisition-Mangement-/refs/heads/main/tournamentinfo.txt'
+raw_data <- read_lines(url, skip = 4)
+head(raw_data) # loaded correctly with skipped lines 
+```
+<h2>Import TXT File </h2> 
+The TXT file has been imported, but the data in its current form is not very useful. Therefore, I will split the strings into vectors containing the player name, win, score, Pre-Rating, and the Average Pre-Chess Rating of opponents. These vectors will then be organized into a matrix for further analysis.
+
+```{r setup1, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+#install.packages("stringr")
+#install.packages("dplyr")
+library(stringr)
+library(dplyr)
+
+processed_data <- str_split(raw_data, "\\s*\\|\\s*", simplify = TRUE)
+# create dataframe
+chess <- as.data.frame(processed_data, stringsAsFactors = FALSE)
+
+# column names
+colnames(chess) <- c("ID", "PlayerName", "Total", "R1","R2","R3","R4","R5","R6","R7")
+
+```
+The dataframe of chess was created, but issues arise since each player's data spans 3 rows in the dataset. The first row contains the player's ID, name, and total points. The second row contains additional details like state and rating, and the rounds' results. There’s a break line after every 3 rows, which complicates data extraction.
+
+<h2>Extract And Create Dataframe </h2> 
+```{r setup2, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# create empty vectors for player information
+id = c()
+name = c()
+state = c()
+pre_rating = c()
+post_rating = c()
+uscf_id = c() 
+total_points = c()
+
+# Vectors for results and opponent IDs by each round
+round_1_result = c()
+round_1_opponent = c()
+round_2_result = c()
+round_2_opponent = c()
+round_3_result = c()
+round_3_opponent = c()
+round_4_result = c()
+round_4_opponent = c()
+round_5_result = c()
+round_5_opponent = c()
+round_6_result = c()
+round_6_opponent = c()
+round_7_result = c()
+round_7_opponent = c()
+
+# Helper function to extract round result and opponent ID
+extract_round_info <- function(round_str) {
+  round_info = strsplit(trimws(round_str), " +")[[1]]  # Split based on spaces
+  
+  if (length(round_info) == 2) {
+    result = round_info[1]  # Win/Draw/Loss 
+    opponent = round_info[2]
+  } else {
+    result = NA
+    opponent = NA
+  }
+  
+  return(list(result = result, opponent = opponent))
+}
+
+# Process each player's data (spanning 3 rows) in the chess dataframe
+for (i in seq(1, nrow(chess), by = 3)) {
+  player_info = chess[i, ]
+  
+  player_id = trimws(player_info[1])
+  id = c(id, player_id)
+  
+  player_name = trimws(player_info[2])
+  name = c(name, player_name)
+ 
+  total_pts = as.numeric(trimws(player_info[3]))
+  total_points = c(total_points, total_pts)
+  
+  ### Extract Player's State, USCF ID, PreRating, and PostRating from the second row ###
+  state_info = chess[i + 1, 1]  # State
+  state = c(state, trimws(state_info))  
+  
+  # Extract the USCF ID and ratings from the second row
+  rating_str <- chess[i + 1, 2]  
+  
+  # USCF ID and Ratings are separated by " / ", so split the string accordingly
+  split_info <- strsplit(trimws(rating_str), " / ")[[1]]
+  
+  if (length(split_info) == 2) {
+    # USCF ID is before the "/"
+    uscf_id_value <- as.numeric(split_info[1])
+    uscf_id <- c(uscf_id, uscf_id_value)
+    
+    # Ratings part contains "R:" and the rating
+    rating_str <- split_info[2]
+    rating_split <- strsplit(rating_str, "->")[[1]]
+    
+    if (length(rating_split) == 2) {
+      # Extract PreRating (removing "R:" and extra spaces)
+      pre_rating_value <- as.numeric(trimws(gsub("R:", "", rating_split[1])))
+      post_rating_value <- as.numeric(trimws(rating_split[2]))
+    } else {
+      pre_rating_value <- NA
+      post_rating_value <- NA
+    }
+  } else {
+    uscf_id_value <- NA
+    pre_rating_value <- NA
+    post_rating_value <- NA
+  }
+  
+  pre_rating = c(pre_rating, pre_rating_value)
+  post_rating = c(post_rating, post_rating_value)
+
+  ### Extract results for each round ###
+  for (round_num in 1:7) {
+    round_result = extract_round_info(player_info[3 + round_num]) 
+    if (!is.null(round_result)) {
+      if (round_num == 1) {
+        round_1_result = c(round_1_result, round_result$result)
+        round_1_opponent = c(round_1_opponent, round_result$opponent)
+      } else if (round_num == 2) {
+        round_2_result = c(round_2_result, round_result$result)
+        round_2_opponent = c(round_2_opponent, round_result$opponent)
+      } else if (round_num == 3) {
+        round_3_result = c(round_3_result, round_result$result)
+        round_3_opponent = c(round_3_opponent, round_result$opponent)
+      } else if (round_num == 4) {
+        round_4_result = c(round_4_result, round_result$result)
+        round_4_opponent = c(round_4_opponent, round_result$opponent)
+      } else if (round_num == 5) {
+        round_5_result = c(round_5_result, round_result$result)
+        round_5_opponent = c(round_5_opponent, round_result$opponent)
+      } else if (round_num == 6) {
+        round_6_result = c(round_6_result, round_result$result)
+        round_6_opponent = c(round_6_opponent, round_result$opponent)
+      } else if (round_num == 7) {
+        round_7_result = c(round_7_result, round_result$result)
+        round_7_opponent = c(round_7_opponent, round_result$opponent)
+      }
+    }
+  }
+}
+
+# Combine all extracted data into df
+chess_tournament <- data.frame(
+  ID = id,
+  Name = name,
+  State = state,
+  USCF_ID = uscf_id,
+  PreRating = pre_rating,
+  PostRating = post_rating,
+  TotalPoints = total_points,
+  Round1_Result = round_1_result,
+  Round1_Opponent = round_1_opponent,
+  Round2_Result = round_2_result,
+  Round2_Opponent = round_2_opponent,
+  Round3_Result = round_3_result,
+  Round3_Opponent = round_3_opponent,
+  Round4_Result = round_4_result,
+  Round4_Opponent = round_4_opponent,
+  Round5_Result = round_5_result,
+  Round5_Opponent = round_5_opponent,
+  Round6_Result = round_6_result,
+  Round6_Opponent = round_6_opponent,
+  Round7_Result = round_7_result,
+  Round7_Opponent = round_7_opponent,
+  stringsAsFactors = FALSE
+)
+head(chess_tournament)
+
+```
+From the TXT file able to extract the Players Name, ID, State, Pre/Post Ranking, W/L/D for each round and the score and placed in a dataframe. The next step would be taking the dataframe and export as a csv. 
+
+<h2>Creating CSV </h2> 
+```{r setup3, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+
+write.csv(chess_tournament, file = "chess_tournament.csv")
+
+```
+
+**Reference**
+
+Kantar, L. “How Can I Import a TXT File in R to Be Read?” Stack Overflow, September 8, 2020. https://stackoverflow.com/questions/61525758/how-can-i-import-a-txt-file-in-r-to-be-read.
+
+Raju, R. “Create Empty Vector in R.” Spark by Examples, July 24, 2021. https://sparkbyexamples.com/r-programming/create-empty-vector-in-r/.
+
+DeAngelis, M. “SEQ Function in R.” Statology, December 2, 2020. https://www.statology.org/seq-function-in-r/.
+
+
+Chatgpt Prompt:
+How to separate mixed data (e.g., win, loss, or draw)in the same column - soultion: Helper function to extract round result
+
+Teach me how to create a loop that skips 3 after extracting information - soultion: Use seq function to generate row indices that skip rows.Iterate through the generated sequence.
+
+When parcing pre-ranking data it is missing appearing as N/A how to extract to capture pre ranking  - soultion: the text"R:" was causing the pre ranking to not be picked up, so the extraction code had to be updated to handle the "R:" (rating) and "->" (transition to post-rating) format, ensuring that if both are present.
+
+
+
+
+
