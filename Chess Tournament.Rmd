@@ -218,7 +218,9 @@ for(i in 1:nrow(chess_tournament)) {
 chess_tournament$Avg_PreRating <- Avg_PreRating
 Avg_PreRating
 
-
+# create new df with selected columns 
+tournament_chess <- chess_tournament %>%
+  select(`Name`, `State`, `TotalPoints`, `PreRating`, `Avg_PreRating`)
 ```
 After calculating the average_pre_rating the final step would be creating the csv file.
 
@@ -226,8 +228,7 @@ After calculating the average_pre_rating the final step would be creating the cs
 ```{r setup5, include=TRUE}
 knitr::opts_chunk$set(echo = TRUE)
 
-write.csv(chess_tournament, file = "chess_tournament.csv")
-
+write.csv(tournament_chess, file = "tournament_chess.csv")
 ```
 
 **Reference**
