@@ -188,10 +188,42 @@ chess_tournament <- data.frame(
 head(chess_tournament)
 
 ```
-From the TXT file able to extract the Players Name, ID, State, Pre/Post Ranking, W/L/D for each round and the score and placed in a dataframe. The next step would be taking the dataframe and export as a csv. 
+From the TXT file able to extract the Players Name, ID, State, Pre/Post Ranking, W/L/D for each round and the score and placed in a dataframe. The next step would be creating the average pre chess rating of opponents which is done as above with creating a vector and creating a loop to extract each round and find the avegrate rating for the opponents.
+
+<h2>Average Pre Chess Rating of Opponents </h2>
+```{r setup3, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+
+Avg_PreRating <- numeric(nrow(chess_tournament))
+#loop 
+for(i in 1:nrow(chess_tournament)) {
+  opponent_ids <- c()
+  for(round_num in 1:7) {
+    opponent_id = chess_tournament[[paste0("Round", round_num, "_Opponent")]][i]
+    if (!is.na(opponent_id)) {
+      opponent_ids = c(opponent_ids, opponent_id)
+    }
+  }
+  
+  opponent_ids = as.numeric(opponent_ids)
+
+  pre_ratings = chess_tournament$PreRating[chess_tournament$ID %in% opponent_ids]
+  if (length(pre_ratings) > 0) {
+    Avg_PreRating[i] <- round(mean(pre_ratings, na.rm = TRUE), 0)
+  } else {
+    Avg_PreRating[i] <- NA
+  }
+}
+
+chess_tournament$Avg_PreRating <- Avg_PreRating
+Avg_PreRating
+
+
+```
+After calculating the average_pre_rating the final step would be creating the csv file.
 
 <h2>Creating CSV </h2> 
-```{r setup3, include=TRUE}
+```{r setup5, include=TRUE}
 knitr::opts_chunk$set(echo = TRUE)
 
 write.csv(chess_tournament, file = "chess_tournament.csv")
