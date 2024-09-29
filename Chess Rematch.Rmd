@@ -1,0 +1,116 @@
+---
+title: "Chess_rematch"
+output: html_document
+date: "2024-09-29"
+---
+Same as before I imported the TXT file from Github and skipped four lines to wear the data actually starts, this time I've also replaced the arrows in the data. 
+```{r setup, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+#install.packages("readr")
+library(readr)
+
+# import raw txt file from Github
+url <- 'https://raw.githubusercontent.com/tiffhugh/Data-Acquisition-Mangement-/refs/heads/main/tournamentinfo.txt'
+raw_data <- read_lines(url, skip = 4)
+head(raw_data) # loaded correctly with skipped lines 
+# Replace "->" with ">>"
+raw_data <- gsub("->", ">>", raw_data)
+head(raw_data)
+```
+When I first did the project I split the strings into vectors containing the player information all at once but this time I did it in seperate vectors. During class dicussion classmates showed how they extracted the players info in two batches then mergeing.In the next chunk extraction and combine will be used. 
+```{r setup1, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+#install.packages("stringr")
+#install.packages("dplyr")
+library(stringr)
+library(dplyr)
+
+player_info<- raw_data[str_detect(raw_data, "^\\s*\\d")]
+
+# Format 2: Records starting with uppercase letters (e.g., state codes)
+player_info2 <- raw_data[str_detect(raw_data, "^\\s*[A-Z]{2}")]
+
+head(player_info)
+head(player_info2)
+```
+```{r setup2, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+
+player_rating <- data.frame(
+  state  = str_trim(substr(player_info2, 1, 6), side = "both"),
+  uscf_id       = str_extract(substr(player_info2, 8, 40), "\\d+"),
+  pre_rating    = as.numeric(str_extract(substr(player_info2, 8, 40), "(?<=R: )\\d+")),
+  post_rating   = as.numeric(str_extract(substr(player_info2, 8, 40), "(?<=>>)\\d+")),
+  stringsAsFactors = FALSE
+)
+
+player_rounds <- data.frame(
+  id = as.numeric(str_trim(substr(player_info, 1, 6))),  
+  name = str_trim(substr(player_info, 8, 40)),           
+  total_pts = as.numeric(str_trim(substr(player_info, 42, 46))), 
+  round1 = str_trim(substr(player_info, 48, 52)),               
+  round2 = str_trim(substr(player_info, 54, 58)),               
+  round3 = str_trim(substr(player_info, 60, 64)),               
+  round4 = str_trim(substr(player_info, 66, 70)),               
+  round5 = str_trim(substr(player_info, 72, 76)),                
+  round6 = str_trim(substr(player_info, 78, 82)),               
+  round7 = str_trim(substr(player_info, 84, 88)),           
+  stringsAsFactors = FALSE
+)
+
+chess_tournament <- cbind(player_rating, player_rounds)
+head(chess_tournament)
+```
+In my first attempt, I took a more manual and iterative approach, looping through each player’s data row by row. I used a helper function to extract the round results and concatenated new values for each attribute into separate vectors. In my second attempt, I streamlined the process by using vectorized functions like substr and str_trim to extract data based on specific character positions. 
+```{r setup3, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+
+AvgOppPreChessRating <- numeric(nrow(chess_tournament))
+
+# Loop each player's rounds
+for (i in seq_len(nrow(chess_tournament))) {
+  Rounds <- str_extract_all(c(chess_tournament$round1[i], chess_tournament$round2[i], chess_tournament$round3[i],
+                              chess_tournament$round4[i], chess_tournament$round5[i], chess_tournament$round6[i],
+                              chess_tournament$round7[i]), "\\d+") 
+  round_indices <- as.numeric(unlist(Rounds))
+
+  # actual rounds played
+  if (length(round_indices) > 0) {
+    # the average pre-rating for actual rounds played by opponents
+    total_rating <- sum(chess_tournament$pre_rating[round_indices], na.rm = TRUE)
+    num_opponents <- sum(!is.na(chess_tournament$pre_rating[round_indices]))
+    if (num_opponents > 0) {
+      AvgOppPreChessRating[i] <- round(total_rating / num_opponents, 0)
+    } else {
+      AvgOppPreChessRating[i] <- NA  # account for the opponents not played
+    }
+  } else {
+    AvgOppPreChessRating[i] <- NA  # account for players did not play against 
+  }
+}
+
+chess_tournament$AvgOppPreChessRating <- AvgOppPreChessRating
+#Player’s Name, Player’s State, Total Number of Points, Player’s Pre-Rating, and Average Pre Chess Rating of Opponents
+chess_rematch <- chess_tournament %>%
+  select(name, state, total_pts, pre_rating, AvgOppPreChessRating)
+head(chess_rematch)
+
+# Write to CSV
+write.csv(chess_rematch, file = "chess_rematch.csv")
+```
+
+In my first attempt to calculate the average pre-rating of opponents, I manually looped through each round for every player, constructing round-by-round column names and extracting opponent IDs before matching them to their pre-ratings. This method required handling missing values with multiple checks. In the second attempt, I streamlined the process by using str_extract_all to automatically gather opponent IDs for all rounds in one step, eliminating the need for manual string construction and nested loops. However I am still having some discrepancies in my first attempt I got the correct average for Gary and Daksheh but Mike was incorrect. This time Gary and Mike's average is correct and Daksheh is wrong. Still trying to figure out where I went astray since this time I made sure to account for players that did not play against each other and in all rounds. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
