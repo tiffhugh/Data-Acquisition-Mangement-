@@ -1,0 +1,182 @@
+---
+title: "Laptop"
+author: "Tiffany Hugh"
+date: "2024-10-06"
+output: html_document
+---
+The dataset titled "Uncleaned Laptop Price Dataset," which I referenced in Assignment #5, is accessible on Kaggle. Utilizing this dataset, I aim to investigate the research question: "How do RAM, CPU, screen size (inches), and weight influence the price of laptops, and are there significant differences across brands?" This analysis will contribute to a deeper understanding of the factors affecting laptop pricing in the current market.
+
+The first chunk involves importing the CSV file and subsequently removing the first column, labeled 'unnamed:0,' which serves as a filler and does not provide any meaningful data. Additionally, rows containing missing values will be eliminated, along with any duplicate entries, to ensure the integrity and quality of the dataset.
+```{r setup, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+options(repos = c(CRAN = "https://cloud.r-project.org/"))  # Set CRAN mirror
+install.packages(c("readr", "dplyr", "tidyr")) 
+
+library(readr); library(dplyr);library(tidyr) 
+# import csv 
+laptopData <- read_csv("laptopData.csv")
+View(laptopData)
+
+# drop first column, n/a rows, and duplicates 
+laptop_data <- laptopData %>%
+select(-`Unnamed: 0`) %>%       
+drop_na() %>%                   
+distinct()                      
+
+View(laptop_data)
+```
+The data needs to be prepared for analysis by converting certain columns to numeric format. Initially, the code removes rows in the Inches column containing a question mark ("?") and converts the remaining values to numeric, replacing any NA entries with 0. The Ram column is directly processed using parse_number to extract numeric values. For the Weight column, it is first converted to character format, then parsed to numeric, filtering out any rows with NA. The code also extracts CPU speed from the Cpu column using a regular expression and creates a new MemorySize column by extracting numeric values from the Memory column when they indicate gigabytes ("GB"). During this process, I considered converting the data to a long format using long_pivot for a potential linear regression analysis; however, I determined that keeping the data in wide format would be more suitable for the intended analysis. Finally, the original Cpu and Memory columns are removed.
+```{r setup1, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# coverting column observation to numeric seperately, tried to do it together but delete all obervation because some coulmns had to remove non-numeric and parse before converting to numeric...
+library(dplyr)
+library(readr)
+
+# inches 
+laptop_info = laptop_data %>%
+  filter(Inches != "?") %>%  # remove "?"
+  mutate(
+    Inches = as.numeric(as.character(Inches)) 
+  ) %>%
+  mutate(
+    Inches = ifelse(is.na(Inches), 0, Inches)  # replace NA with 0
+  )
+
+# ram 
+laptop_info = laptop_info %>%
+  mutate(
+    Ram = parse_number(Ram)  
+  )
+
+# weight - giving issues with parsing make sure to define it was a chara turning to numeric 
+laptop_info = laptop_info %>%
+  mutate(
+    Weight = as.character(Weight),  
+    Weight = parse_number(Weight)    
+  ) %>%
+  filter(!is.na(Weight))  # keep valid numeric Weight
+
+# remove NA in inches or weight
+laptop_info = laptop_info %>%
+  filter(!is.na(Inches) & !is.na(Weight))
+
+# cpu
+laptop_info <- laptop_info %>%
+  mutate(
+    CPUSpeed = parse_number(gsub(".*? (\\d+\\.?\\d*)GHz.*", "\\1", Cpu))  # Extracting CPU speed in GHz
+  ) 
+
+#memory - giving issues with mutate
+unique_memory_values <- unique(laptop_info$Memory)
+print(unique_memory_values)
+
+laptop_info <- laptop_info %>%
+  mutate(
+    # Extract Memory size with various formats
+    MemorySize = case_when(
+      grepl("GB", Memory) ~ parse_number(gsub("GB.*", "", Memory)),  # Extract size if it contains "GB"
+      TRUE ~ NA_real_  # NA for unexpected formats
+    )
+  ) 
+
+# remove the original columns 
+laptop_info <- laptop_info %>%
+  select(-Cpu, -Memory)
+
+str(laptop_info)
+
+```
+
+```{r setup2, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+# computer brand percentage
+company_count <- laptop_info %>%
+  group_by(Company) %>%
+  summarize(Count = n()) %>%
+  mutate(Percentage = (Count / sum(Count)) * 100) %>%
+  arrange(desc(Count))
+print(company_count)
+#cpu percentage 
+cpu_count <- laptop_info %>%
+  group_by(CPUSpeed) %>%
+  summarize(Count = n()) %>%
+  mutate(Percentage = (Count / sum(Count)) * 100) %>%
+  arrange(desc(Count))
+print(cpu_count)
+# ram percentage 
+ram_count <- laptop_info %>%
+  group_by(Ram) %>%
+  summarize(Count = n()) %>%
+  mutate(Percentage = (Count / sum(Count)) * 100) %>%
+  arrange(desc(Count))
+print(ram_count)
+
+#visuals 
+install.packages("ggplot2")
+library(ggplot2)
+library(dplyr)
+
+# Top 5 companies
+top_companies <- company_count %>%
+  slice_head(n = 5)
+ggplot(top_companies, aes(x = reorder(Company, -Percentage), y = Percentage)) +
+  geom_bar(stat = "identity", fill = "purple") +
+  labs(title = "Top 5 Laptop Companies by Percentage", x = "Company", y = "Percentage (%)") +
+  theme_minimal()
+
+# Top 5 CPUs
+top_cpus <- cpu_count %>%
+  slice_head(n = 5)
+ggplot(top_cpus, aes(x = reorder(CPUSpeed, -Percentage), y = Percentage)) +
+  geom_bar(stat = "identity", fill = "plum") +
+  labs(title = "Top 5 CPUs by Percentage", x = "CPU Speed", y = "Percentage (%)") +
+  theme_minimal()
+
+# Top 5 RAM sizes
+top_rams <- ram_count %>%
+  slice_head(n = 5)
+ggplot(top_rams, aes(x = reorder(Ram, -Percentage), y = Percentage)) +
+  geom_bar(stat = "identity", fill = "maroon") +
+  labs(title = "Top 5 RAM Sizes by Percentage", x = "RAM (GB)", y = "Percentage (%)") +
+  theme_minimal()
+
+
+
+```
+When examining laptop purchase preferences, the data reveals significant trends in brand popularity, CPU speeds, and RAM configurations based on percentage distribution. Lenovo leads the market with 22.71%, closely followed by Dell at 22.46% and HP at 20.93%. Asus and Acer account for 12.00% and 8.13%, respectively. In terms of CPU speeds, the most favored option is 2.50 GHz, representing 22.38% of the dataset, while 2.80 GHz and 2.70 GHz come next, capturing 12.88% and 12.72%. Regarding RAM sizes, 8 GB is the most common choice, comprising a substantial 47.75% of laptops, with 4 GB trailing at 28.82%. Meanwhile, 16 GB accounts for 15.46%, indicating a clear preference for higher RAM among consumers.
+
+Having gained insights into the popular laptop brands, CPU speeds, and RAM configurations, it is now essential to examine the correlations between these variables for a more comprehensive understanding.
+```{r setup3, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+# Correlation matrix for numeric variables
+cor_matrix <- cor(laptop_info %>% select(Price, Ram, CPUSpeed, Inches, Weight), use = "complete.obs")
+
+#install.packages("ggcorrplot")
+# Visualize the correlation matrix
+library(ggcorrplot)
+ggcorrplot(cor_matrix, method = "circle", type = "lower", lab = TRUE)
+
+```
+Since I am interested in exploring how laptop characteristics such as RAM, CPU speed, screen size (inches), and weight affect price, I will delve deeper into the correlation of price in relation to these attributes. The most notable finding is the strong correlation between price and RAM, with a coefficient of 0.683. This indicates that as RAM increases, the price of laptops tends to rise significantly, suggesting that consumers are willing to pay a premium for laptops with higher RAM.
+
+The correlation between price and CPU speed is also positive, at 0.427, indicating a moderate relationship. This finding suggests that laptops equipped with faster CPUs generally command higher prices, underscoring the importance of processing power in consumer purchasing decisions.
+
+In contrast, the correlations between price and the other two variables—screen size (inches) and weight—are relatively weak. The minimal correlation with inches (0.043) suggests that screen size does not significantly influence laptop prices in this dataset. Similarly, the correlation with weight (0.177) is low, indicating that variations in weight have little impact on pricing. Overall, these insights highlight the strong influence of RAM and CPU speed on laptop prices while suggesting that screen size and weight are less critical factors in consumer decision-making.
+
+After conducting a correlation analysis, we can proceed with running a linear regression.
+```{r setup4, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+# fit a linear regression model
+linear_model <- lm(Price ~ Ram + CPUSpeed + Inches + Weight, data = laptop_info)
+summary(linear_model)
+
+```
+The model explains approximately 52% of the variance in laptop prices. The linear regression analysis reveals that RAM and CPU speed are significant positive predictors of laptop price, with coefficients of 4,157.9 and 18,075.8, respectively, both having p-values less than 2e-16, indicating strong statistical significance. This suggests that consumers are willing to pay more for laptops with larger RAM and faster CPUs, as these features are often sought after for better performance. Conversely, screen size (inches) has a significant negative coefficient of -1,531.5, indicating that larger screens are associated with lower prices. Weight, however, is not a statistically significant predictor (p = 0.2317), suggesting it does not meaningfully impact laptop pricing. Overall, these insights highlight the importance of RAM and CPU speed in consumer purchasing decisions. Despite this I am unsure if the data is actually meaningful since intercept is 9317.5, meaning that when ram,cpu, inches, and weight is zero a laptop would cost $9317.5 which is not logical. In addition, when one unit of ram increase the price increases by $ 9317.5, one cpu unit increase the cost goes up by $ 18075.8 and so forth. 
+
+Reference
+Akinwande, A. 2020. ggcorrplot: Visualization of a Correlation Matrix. CRAN. https://cran.r-project.org/web/packages/ggcorrplot/readme/README.html.
+
+Chat gpt prompts:
+Received warning:! 1 parsingfailure.row col expected actual202  -- a number ?  What causes parsing failure and some possible solutions? 
+

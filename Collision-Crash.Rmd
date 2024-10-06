@@ -1,0 +1,128 @@
+---
+title: "Motor Vehicle Collisions"
+author: "Tiffany Hugh"
+date: "2024-10-05"
+output: html_document
+---
+The dataset "Motor Vehicle Collisions - Crashes," provided by John Ferrara and accessible through NYC Open Data, presents a valuable opportunity for analysis of traffic incidents in New York City. This research seeks to investigate several critical questions: Which boroughs exhibit the highest frequency of motor vehicle accidents? What factors contribute to the occurrence of these incidents? By exploring this untidy dataset, the goal is to extract meaningful insights that can inform public safety initiatives and guide policy decisions related to traffic management and vehicle safety.
+```{r setup, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+#install.packages(c("readr", "dplyr", "tidyr","tidyverse"))
+library(readr); library(dplyr); library(tidyr); library(tidyverse)
+# import csv data file from NYC Open Data 
+MV_Collisions_Crashes <- read_csv("Motor_Vehicle_Collisions_-_Crashes_20241005.csv")
+View(MV_Collisions_Crashes)
+```
+Upon importing the dataset, it becomes evident that there are instances of missing data. The initial step in the data cleaning process involves prioritizing the removal of incomplete information across all relevant columns. Following this, specific columns will be selected for analysis. Given that the data is already structured appropriately, there is no need to convert it into a long format.
+```{r setup1, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Check the number of rows in the original data
+cat("Original dimensions:", dim(MV_Collisions_Crashes), "\n")
+
+# Define key columns
+key_columns <- c("BOROUGH", "LATITUDE", "LONGITUDE", 
+                 "NUMBER OF PERSONS INJURED", "NUMBER OF PERSONS KILLED", 
+                 "CONTRIBUTING FACTOR VEHICLE 1", "VEHICLE TYPE CODE 1")
+
+# Check NAs in key columns
+na_counts <- sapply(MV_Collisions_Crashes[key_columns], function(x) sum(is.na(x)))
+print(na_counts)
+
+# Remove missing values in key columns and create a new dataframe with selected columns
+MV_Collisions_Crashes_Cleaned <- MV_Collisions_Crashes %>%
+    select(all_of(key_columns)) %>%
+    drop_na()
+```
+In the next chuck the count function tallied the number of accidents for each borough, and that finding was then mutated to calculate the percentage of accidents for each borough relative to the total number of accidents. which will then be visualized as a barplot.
+```{r setup2, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+
+borough_accidents <- MV_Collisions_Crashes_Cleaned %>%
+    count(BOROUGH, name = "accident_count") %>%
+    mutate(percentage = (accident_count / sum(accident_count)) * 100) %>%
+    arrange(desc(accident_count))
+print(borough_accidents)
+
+library(ggplot2)
+
+ggplot(borough_accidents, aes(x = reorder(BOROUGH, -percentage), y = percentage)) +
+    geom_bar(stat = "identity", fill = "purple") +
+    labs(title = "Percentage of Accidents by Borough",
+         x = "Borough",
+         y = "Percentage of Accidents (%)") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+Brooklyn accounts for approximately 31.96% of all recorded accidents, making it the borough with the highest proportion. Queens follows with about 26.96%, indicating that just over a quarter of accidents occurred there. Manhattan represents approximately 22.21% of the total accidents, while the Bronx accounts for around 14.67%. Finally, Staten Island has the smallest percentage at about 4.20%, reflecting its significantly lower share of incidents compared to the other boroughs. Overall, Brooklyn and Queens together comprise the majority of traffic accidents in the city.
+
+In the next chunk analyze the contributing factor to motor vehicle accidents. First the total number of accidents for each factor is calculate. Then determine the percentage of accidents attributed to each factor and rounds the percentages to two decimal places for clarity. Following this calculation, the top five contributing factors are extracted and presented in descending order based on accident counts. Finally, a bar plot is created to visually represent these top factors, enhancing understanding of their relative impact on accident rates, with appropriately adjusted axis labels for better readability.
+
+```{r setup3, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+# contributing factor percentage
+contributing_factor_percentages <- MV_Collisions_Crashes_Cleaned %>%
+    group_by(`CONTRIBUTING FACTOR VEHICLE 1`) %>%
+    summarize(accident_count = n(), .groups = 'drop') %>%
+    mutate(percentage = (accident_count / sum(accident_count)) * 100) %>%
+    mutate(percentage = round(percentage, 2))  # Round to 2 decimal places
+
+# Get the top five contributing factors
+top_five_factors <- contributing_factor_percentages %>%
+    arrange(desc(accident_count)) %>%
+    slice_head(n = 5)
+print(top_five_factors)
+
+#  bar plot 
+ggplot(top_five_factors, aes(x = reorder(`CONTRIBUTING FACTOR VEHICLE 1`, -percentage), y = percentage)) +
+    geom_bar(stat = "identity", fill = "gold") +  # Bar color
+    labs(title = "Top Five Contributing Factors for Accidents",
+         x = "Contributing Factor Vehicle 1",
+         y = "Percentage of Accidents") +
+    theme_minimal() + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 12),  # Rotate and adjust text size
+          axis.title.x = element_text(size = 14),  # Adjust x-axis title size
+          axis.title.y = element_text(size = 14)) +  # Adjust y-axis title size
+    scale_x_discrete(expand = expansion(mult = c(0.1, 0.1)))  # Add space around x-axis labels
+```
+The analysis indicates that while numerous factors contribute to motor vehicle accidents, the focus here is on the top five contributing factors. A notable 38.02% of accidents were classified as "unspecified," suggesting a significant gap in data reporting or clarity regarding the causes. The second most common factor was driver inattention or distraction, accounting for 19.25% of incidents. Other key contributors included failure to yield the right-of-way at 6.32%, backing unsafely at 4.22%, and following too closely at 3.26%. These statistics underscore the critical importance of driver awareness and safe decision-making on the road. While many factors contribute to accidents, these top five highlight specific areas where targeted interventions and education could make a meaningful impact in reducing collision rates.
+```{r setup4, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+# Count accidents for each contributing factor and get the top five
+top_five_factors <- MV_Collisions_Crashes_Cleaned %>%
+    group_by(`CONTRIBUTING FACTOR VEHICLE 1`) %>%
+    summarize(accident_count = n(), .groups = 'drop') %>%
+    arrange(desc(accident_count)) %>%
+    slice_head(n = 5)
+
+# Filter the original dataset for only the top five contributing factors
+borough_contributing_factors <- MV_Collisions_Crashes_Cleaned %>%
+    filter(`CONTRIBUTING FACTOR VEHICLE 1` %in% top_five_factors$`CONTRIBUTING FACTOR VEHICLE 1`) %>%
+    group_by(BOROUGH, `CONTRIBUTING FACTOR VEHICLE 1`) %>%
+    summarize(accident_count = n(), .groups = 'drop') %>%
+    # Calculate the total accidents for each borough for percentage calculation
+    group_by(BOROUGH) %>%
+    mutate(percentage = (accident_count / sum(accident_count)) * 100) %>%
+    ungroup() %>%
+    arrange(BOROUGH, desc(accident_count))
+
+# Print the results
+print(borough_contributing_factors)
+
+# Create a bar plot to visualize the relationship
+ggplot(borough_contributing_factors, aes(x = reorder(`CONTRIBUTING FACTOR VEHICLE 1`, -percentage), y = percentage, fill = BOROUGH)) +
+    geom_bar(stat = "identity", position = "dodge") +  # Dodge position for side-by-side bars
+    labs(title = "Top Five Accident Contributing Factors by Borough",
+         x = "Contributing Factor Vehicle 1",
+         y = "Percentage of Accidents") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate x-axis text for readability
+```
+In the analysis of contributing factors to accidents, the category labeled "Unspecified" is particularly noteworthy across the boroughs, with the Bronx exhibiting the highest percentage at 59.96%. This indicates a concerning lack of clarity in reporting accident causes in that area. Brooklyn follows closely, with unspecified factors accounting for 57.77% of accidents, highlighting a similar issue of unreported circumstances that complicate safety interventions. In Manhattan, while the percentage is somewhat lower at 49.65%, it still signifies a significant portion of accidents, underscoring the need for improved reporting practices. Queens has 47.92% of accidents attributed to unspecified factors, while Staten Island reports 53.55%. The prevalence of unspecified factors across these boroughs points to systemic challenges in accurately identifying accident causes, which hampers effective intervention strategies.
+
+In addition to unspecified factors, "Driver Inattention/Distraction" emerges as a major concern, particularly in Manhattan, where it constitutes 32.69% of accidents. This high percentage reflects the unique challenges of the urban environment, where distractions are likely more pronounced due to the dense population and traffic. In Brooklyn and the Bronx, driver inattention accounts for 23.77% and 23.14% of accidents, respectively, further emphasizing the need to address distracted driving as a critical road safety issue in these areas.
+
+Other contributing factors, such as "Failure to Yield Right-of-Way," "Backing Unsafely," and "Following Too Closely," contribute to accident statistics as well, but at lower rates, typically ranging from about 4% to 8% across the boroughs. While these factors are less common, they still represent significant risks that could be mitigated through targeted education and enforcement efforts. Overall, the data presents a complex landscape of accident contributing factors in New York City, highlighting the necessity for a comprehensive approach to enhance road safety and reduce the incidence of unspecified incidents.
+

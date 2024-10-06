@@ -1,0 +1,78 @@
+---
+title: "Buffalo Blizzard"
+author: "Tiffany Hugh"
+date: "2024-10-06"
+output: html_document
+---
+The dataset "Buffalo Monthly Snowfall," provided by Kevin Havis and accessible through the National Weather Service, offers a valuable opportunity to analyze the weather patterns in Buffalo. This research aims to investigate a seemingly simple yet intricate question: When was the worst storm? By delving into this untidy dataset, the goal is to extract meaningful insights regarding snowfall amounts and identify the most significant storm events over the given period.
+
+In the first chunk, the CSV file is imported, while skipping every 11th line that contains headers rather than weather data 
+```{r setup, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+#install.packages(c("readr", "dplyr","tidyr"))
+library(readr); library(dplyr)
+
+buffalo_weather_csv <- read_csv("buffalo_weather.csv.csv")
+#skip every 11th line 
+buffalo_weather<- buffalo_weather_csv %>%
+  dplyr::filter(row_number() %% 11 != 0)
+
+View(buffalo_weather)
+
+```
+The dataset contains future dates and N/A values, which can be removed to clean the data. Using pivot_longer() to reshape the data from wide format to long format, facilitating easier analysis of monthly snowfall. Additionally, the presence of "T" (indicating trace amounts of snow) throughout the observations requires recoding. These trace amounts will be replaced with a small numeric value to ensure they can be included in calculations without skewing the results.
+```{r setup1, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyr)
+buffalo_snow <- buffalo_weather %>%
+  filter(!SEASON %in% c("2024-25", "2025-26", "2026-27", "2027-28", "2028-29", "2029-30")) %>%
+  na.omit()  
+
+View(buffalo_snow)
+# make data long with pivot_longer
+buffalo_long<- buffalo_snow %>%
+  pivot_longer(cols = JUL:JUN, 
+               names_to = "Month", 
+               values_to = "Snowfall") %>%
+  mutate(Snowfall = ifelse(Snowfall == "T", 0.01, as.numeric(Snowfall)))  # Convert "T" to a small numeric value
+
+View(buffalo_long)
+
+#install.packages("gglot2")
+library(ggplot2)
+#heatmap plot 
+ggplot(buffalo_long, aes(x = Month, y = SEASON, fill = Snowfall)) +
+  geom_tile() +
+  scale_fill_gradient(low = "white", high = "blue") +
+  labs(title = "Snowfall Heatmap by Month and Season",
+       x = "Month",
+       y = "Season") +
+  theme_minimal() +
+  theme(axis.title.y = element_text(margin = margin(r = 40))) # tired extending the y-axis 
+```
+A heatmap was created to visualize snowfall across different months. The analysis clearly shows that there is no snowfall during the spring and summer months, specifically from June to September. In October, snowfall reports fluctuate significantly from year to year. The heatmap also reinforces the notion that the heaviest snowfall occurs in December, which is the peak of winter, helping to narrow down the focus for further investigation. While I attempted to extend the y-axis for clarity, the visualization remains somewhat unclear, indicating that additional analysis is necessary to pinpoint the exact dates of significant snowfall events.
+
+In this chunk, the analysis starts by removing records from the spring and summer months, retaining only the winter months. Next, the code groups the winter data by SEASON and Month, summarizing the total snowfall for each group. Finally, it identifies the month with the highest total snowfall within each season by filtering for the maximum value. This process helps pinpoint the worst snowfall conditions recorded during the winter months.
+```{r setup2, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# remove spring/summer months
+winter <- buffalo_long %>%
+  filter(!Month %in% c("JUN", "JUL", "AUG", "SEP"))
+
+print(winter)
+
+# grouping season and month pinpoint the exact date of worse snowfall
+worst_snow <- winter %>%
+  group_by(SEASON, Month) %>%
+  summarise(Total_Snowfall = sum(Snowfall, na.rm = TRUE), .groups = 'drop') %>%
+  filter(Total_Snowfall == max(Total_Snowfall, na.rm = TRUE))
+
+print(worst_snow)
+```
+The analysis revealed that December 2001-02 had the worst snowfall on record, with an impressive 82.7 inches of snow. While the primary focus was on identifying the worst snowfall, it’s important to acknowledge the broader implications of such extreme weather. This record-setting snowfall not only serves as a crucial reference point for understanding Buffalo's winter weather patterns but also highlights the necessity for effective preparedness strategies in anticipation of similar events in the future. Understanding the impact of such severe weather can help communities better prepare and respond to the challenges posed by winter storms.
+
+Reference 
+R Graph Gallery. "Heatmap." R Graph Gallery. Accessed October 5, 2024. https://r-graph-gallery.com/heatmap.
+Chat GPT Prompt:
+How to mutate numeric vales using ifelse statement. 
