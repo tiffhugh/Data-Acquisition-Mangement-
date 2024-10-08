@@ -1,0 +1,105 @@
+---
+title: "Data Article Extract"
+author: "Tiffany Hugh"
+date: "2024-10-07"
+output: html_document
+---
+
+```{r setup, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+install.packages(c("rvest", "sf", "data.table"))
+library(rvest); library(sf); library(data.table)
+
+url <- 'https://www.datacamp.com/blog/top-15-data-scientist-skills'
+webpage <- read_html(url)
+
+Skill <- html_nodes(webpage, '.css-1rrpkkx h3')
+Skill <- html_text(Skill)
+View(skill)
+
+# create df 
+data_camp <- data.frame(Skill = Skill, stringsAsFactors = FALSE)
+
+#removes number next to skill
+data_camp$Skill <- gsub("^\\d+\\.\\s*", "", data_camp$Skill)
+
+# add source 
+data_camp$Source <- "DataCamp"
+
+# technical or soft
+data_camp$Type <- ifelse(1:nrow(data_camp) <= 11, "Technical", "Soft")
+
+
+View(data_camp)
+
+```
+
+
+
+```{r setup1, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+library(rvest); library(sf); library(data.table)
+
+url2 <- 'https://www.geeksforgeeks.org/data-science-skills/'
+webpage <- read_html(url2)
+
+Skill <- html_nodes(webpage, 'h3 span')
+Skill <- html_text(Skill)
+View(Skill)
+
+# create df 
+g4g <- data.frame(Skill = Skill, stringsAsFactors = FALSE)
+
+#removes number next to skill
+g4g$Skill <- gsub("^\\d+\\.\\s*", "", g4g$Skill)
+
+# add source 
+g4g$Source <- "Geek4Geek"
+
+# remove specified rows that not apart of skills data
+g4g <- g4g[!(g4g$Skill %in% c("Technical Skills", "Non-Technical Skills", "Login")), ]
+rownames(g4g) <- NULL # re-sets the rows to 1 
+
+# technical vs soft 
+g4g$Type <- ifelse(1:nrow(g4g) %in% 1:7, "Technical", 
+                   ifelse(1:nrow(g4g) %in% c(8, 9, 10), "Soft", NA))
+
+View(g4g)
+
+```
+
+```{r setup3, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+
+url <- 'https://towardsdatascience.com/5-key-soft-skills-to-elevate-your-data-science-game-1a4451f6884b'
+webpage <- read_html(url)
+
+Skill <- html_nodes(webpage,'.ps')
+Skill <- html_text(Skill)
+View(skill)
+
+# create df 
+towards_ds<- data.frame(Skill = Skill, stringsAsFactors = FALSE)
+
+#removes number next to skill
+towards_ds$Skill <- gsub("^\\d+\\.\\s*", "", towards_ds$Skill)
+
+# add source 
+towards_ds$Source <- "TowardsDataScience"
+
+# technical or soft
+towards_ds$Type <- "Soft"
+
+View(towards_ds)
+
+```
+
+```{r setup3, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Assuming data_camp, towards_ds, and g4g are already defined
+ds_articles <- rbind(data_camp, towards_ds, g4g)
+
+# View the combined data frame
+View(ds_articles)
+```
