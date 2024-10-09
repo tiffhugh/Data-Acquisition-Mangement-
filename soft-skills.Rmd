@@ -96,10 +96,11 @@ View(towards_ds)
 
 ```{r setup3, include=TRUE}
 knitr::opts_chunk$set(echo = TRUE)
-
-# Assuming data_camp, towards_ds, and g4g are already defined
+#combine 
 ds_articles <- rbind(data_camp, towards_ds, g4g)
 
-# View the combined data frame
 View(ds_articles)
+
+#export as csv
+write.csv(ds_articles, "ds_articles.csv", row.names = FALSE)
 ```
