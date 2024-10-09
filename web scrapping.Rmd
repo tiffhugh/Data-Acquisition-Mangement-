@@ -1,0 +1,87 @@
+---
+title: "web-scrapping"
+author: "Tiffany Hugh"
+date: "2024-10-08"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#install.packages("rvest")
+#install.packages("data.table")
+library(rvest)
+library(data.table)
+```
+
+```{r setup1, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+url <- 'https://ballotpedia.org/List_of_United_States_Representatives_from_California'
+webpage <- read_html(url)
+
+district <- html_nodes(webpage,'td:nth-child(1) a')
+district <- html_text(district)
+View(district)
+
+party <- html_nodes(webpage, '.partytd')
+party <- html_text(party)
+View(party)
+
+member <- html_nodes(webpage, 'td+ td a')
+member <- html_text(member)
+View(member)
+
+start <- html_nodes(webpage, 'td:nth-child(4)')
+start <- html_text(start)
+View(start)
+
+end <- html_nodes(webpage, 'td:nth-child(5)')
+end <- html_text(end)
+View(end)
+
+full_table <- as.data.frame(cbind(district,
+                                  member,
+                                  party,
+                                  start,
+                                  end))
+View(full_table)
+
+CA_Reps <- full_table
+
+View(CA_Reps)
+
+```
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#installed.packages("ggplot2")
+library(ggplot2)
+library(ggplot2)
+library(dplyr)
+
+# Filter for only Democrats and Republicans
+filtered_CA_Reps <- CA_Reps %>%
+  filter(party %in% c("Democrat", "Republican"))
+
+# Create the bar plot
+ggplot(filtered_CA_Reps, aes(x = party, fill = party)) +
+  geom_bar() +
+  scale_fill_manual(values = c("Democrat" = "blue", "Republican" = "red")) +
+  labs(title = "Number of California Representatives by Party",
+       x = "Party",
+       y = "Number of Representatives") +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+
+
+```
+
+
+
+
+
+
+
+
