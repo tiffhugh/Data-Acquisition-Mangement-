@@ -1,0 +1,125 @@
+---
+title: "Project 3"
+output: html_document
+date: "2024-10-09"
+---
+
+```{r setup, include=TRUE}
+# Load necessary libraries
+library(rvest)
+library(dplyr)
+
+# Specify the URL
+url <- "https://www.coursera.org/articles/data-scientist-skills"
+
+page <- read_html(url)
+  
+Skills <- page %>%
+  html_nodes(".css-1pa3ynn + h3, h3:nth-child(10), h3:nth-child(39), h3:nth-child(49), h3:nth-child(61), h3:nth-child(70), h3:nth-child(26)") %>%
+  html_text(trim = TRUE)
+  
+data_df <- data.frame(Skills, stringsAsFactors = FALSE) %>%
+  mutate(
+    Number = sub("\\..*", "", Skills),  # Extract numbers
+    Skill = sub("^[0-9]+\\. ", "", Skills),  # Extract skills without numbers
+    DataSource = "Coursera"  # Add data source
+  ) %>%
+  select(-Number, -Skills)  # Remove the numbers and original Skills column
+
+# Select only the Skill and DataSource columns
+subset_data3 <- data_df %>%
+  select(Skill, DataSource)
+
+# Print the final subset data
+print(subset_data3)
+
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars, echo=TRUE}
+library(httr)
+
+# Specify the URL
+url2 <- "https://www.tableau.com/learn/articles/data-science-skills"
+
+# Read the HTML content from the URL with a user-agent
+page2 <- read_html(url2)
+
+# Extract the skills using the correct selector
+skills2 <- page2 %>%
+  html_nodes(".content-container--text-column h2") %>%  
+  html_text(trim = TRUE)
+
+data2 <- data.frame(skills2, stringsAsFactors = FALSE) %>%
+  mutate(
+    Number = sub("\\..*", "", skills2),  # Extract numbers
+    Skill = sub("^[0-9]+\\. ", "", skills2),  # Extract skills
+    DataSource = "Tableau"  # Add a new column for data source
+  ) %>%
+  select(-Number)  # Remove the numbers column
+
+# Remove the 11th row if it exists
+if (nrow(data2) >= 11) {
+  data2 <- data2[-11, ]
+}
+
+# Select only the Skill and DataSource columns
+subset_data <- data2 %>%
+  select(Skill, DataSource)
+
+# Print the final subset data
+print(subset_data)
+
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure1, echo=TRUE}
+
+url3 <- "https://www.linkedin.com/pulse/2024-data-science-toolkit-top-skills-you-need-master-iain-brown-ph-d--qf7ke"
+
+page3 <- read_html(url3)
+
+skills3 <- page3 %>%
+  html_nodes("h2 span") %>%  
+  html_text(trim = TRUE)
+
+data3 <- data.frame(skills3, stringsAsFactors = FALSE) %>%
+  mutate(
+    Number = sub("\\..*", "", skills3),  # Extract numbers from skills3
+    Skill = sub("^[0-9]+\\. ", "", skills3),
+    DataSource = "linkedin"# Extract skills from skills3
+  ) %>%
+  select(-Number)  # Remove the numbers column
+
+# Select only the Skill column
+subset_data2 <- data3 %>%
+  select(Skill, DataSource)
+
+
+
+
+```
+
+
+```{r pressure2, echo=TRUE}
+# Merging subset_data and subset_data2
+merged_data <- merge(subset_data, subset_data2, by = "Skill", all = TRUE)
+
+# Merging the result with subset_data3
+merged_data <- merge(merged_data, subset_data3, by = "Skill", all = TRUE)
+
+# Print the final merged data
+print(merged_data)
+
+
+
+```
