@@ -1,0 +1,75 @@
+<?xml version="1.0"?>
+<books>
+  <book>
+    <title>Data Feminism</title>
+    <author>Catherine D'Ignazio, Lauren Klein</author>
+    <genre>Reference work</genre>
+    <publish>February 21, 2020</publish>
+    <goodreads_ranking>4.3</goodreads_ranking>
+    <pages>328</pages>
+  </book>
+  <book>
+    <title>The Rise of Kyoshi</title>
+    <author>F. C. Yee, Michael Dante DiMartino</author>
+    <genre>Fantasy</genre>
+    <publish>July 16, 2019</publish>
+    <goodreads_ranking>4.4</goodreads_ranking>
+    <pages>442</pages>
+  </book>
+  <book>
+    <title>The Shadow of Kyoshi</title>
+    <author>F. C. Yee, Michael Dante DiMartino</author>
+    <genre>Fantasy</genre>
+    <publish>July 21, 2020</publish>
+    <goodreads_ranking>4.3</goodreads_ranking>
+    <pages>341</pages>
+  </book>
+  <book>
+    <title>The Dawn of Yangchen</title>
+    <author>F. C. Yee, Michael Dante DiMartino</author>
+    <genre>Fantasy</genre>
+    <publish>January 1, 2022</publish>
+    <goodreads_ranking>4.0</goodreads_ranking>
+    <pages>1136</pages>
+  </book>
+  <book>
+    <title>The Legacy of Yangchen</title>
+    <author>F. C. Yee, Michael Dante DiMartino</author>
+    <genre>Fantasy</genre>
+    <publish>July 18, 2023</publish>
+    <goodreads_ranking>4.1</goodreads_ranking>
+    <pages>336</pages>
+  </book>
+  <book>
+    <title>The Reckoning of Roku</title>
+    <author>Randy Ribay</author>
+    <genre>Fantasy</genre>
+    <publish>July 23, 2024</publish>
+    <goodreads_ranking>4.0</goodreads_ranking>
+    <pages>368</pages>
+  </book>
+  <book>
+    <title>Playground</title>
+    <author>Aaron Beauregard</author>
+    <genre>Horror</genre>
+    <publish>November 25, 2022</publish>
+    <goodreads_ranking>3.4</goodreads_ranking>
+    <pages>290</pages>
+  </book>
+  <book>
+    <title>Demon Slayer Vol 1</title>
+    <author>Koyoharu Gotouge</author>
+    <genre>Manga/Horror</genre>
+    <publish>June 6, 2016</publish>
+    <goodreads_ranking>4.5</goodreads_ranking>
+    <pages>192</pages>
+  </book>
+  <book>
+    <title>Goodnight PunPun Vol 1</title>
+    <author>Inio Asano</author>
+    <genre>Manga/Psychological</genre>
+    <publish>August 3, 2007</publish>
+    <goodreads_ranking>4.2</goodreads_ranking>
+    <pages>448</pages>
+  </book>
+</books>
