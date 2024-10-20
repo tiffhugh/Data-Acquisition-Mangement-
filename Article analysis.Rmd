@@ -1,0 +1,69 @@
+---
+title: "Referral data"
+output: html_document
+date: "2024-10-17"
+
+---
+Research Question: What specific skills are essential for various data science positions across industries?
+
+By: Daniel Brusche, Tiffany Hugh, Luis Fernando Munoz Grass
+
+```{r setup, include=TRUE}
+#install.packages("tidyverse")
+library(tidyverse)
+
+# Read the CSV file from the URL
+url <- "https://raw.githubusercontent.com/tiffhugh/Data-Acquisition-Mangement-/refs/heads/main/articles.csv"
+article_data <- read.csv(url)
+
+
+
+
+```
+
+## R Markdown
+
+For the analysis, I want to summarize the data on sources and skills to see the breakdown of technical skills, programming languages, and soft skills derived from certain articles. I then want to visualize this data in a bar chart.
+
+```{r cars, echo=TRUE}
+#install.packages("dplyr")
+#install.packages("ggplot2")
+library(dplyr)
+library(ggplot2)
+
+
+source_skill_count <- article_data %>%
+  group_by(Source, Type) %>%
+  summarise(Count = n(), .groups = 'drop')
+
+# Print the result
+print(source_skill_count)
+
+ggplot(source_skill_count, aes(x = reorder(Source, -Count), y = Count, fill = Type)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Source Count by Skill Type", x = "Source", y = "Count") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),  # Rotate x-axis labels for readability
+        legend.title = element_blank()) +  # Remove legend title
+  scale_fill_viridis_d(option = "C") 
+
+
+
+
+```
+
+
+### Findings
+
+Based on our analysis of data science articles, we identified key skills grouped into programming languages, technical skills, and soft skills. Programming languages—such as Python, SQL, and R—serve as essential tools for analyzing and manipulating data, making them crucial for data scientists across all industries. Technical skills encompass specialized tools and software like Tableau and TensorFlow, which are vital for executing tasks such as data visualization and machine learning. Meanwhile, soft skills—like leadership and communication—refer to interpersonal abilities that empower professionals to manage teams, collaborate effectively, and solve complex problems.
+
+Throughout the analyzed sources, technical skills are frequently emphasized, highlighting their foundational role in data science. While technical competencies are vital for data manipulation and analysis, the articles also acknowledge the growing importance of soft skills, particularly in a collaborative field like data science. Many sources focused solely on soft skills, likely because these attributes are essential for effective teamwork and communication in diverse work environments. Notably, well-known coding resources like DataCamp and GeeksforGeeks prominently feature programming languages, underscoring the demand for skills like Python, SQL, and R. This focus not only reflects industry needs but also serves to promote their coding programs, positioning them as key players in the education and training of aspiring data scientists.
+
+
+Building on these insights, which reveal the skills emphasized in the articles, we aim to determine how closely they align with industry demands, ultimately preparing data scientists for success in real-world roles.
+
+
+```{r pressure, echo=FALSE}
+```
+
+
