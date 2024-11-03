@@ -1,0 +1,359 @@
+---
+title: "JA +Grimm"
+author: "Tiffany Hugh"
+date: "2024-11-02"
+output: html_document
+---
+**Introduction**
+
+For Assignment #10, I am building on an example from the Text Mining with R reading. In this example, I’ll extend the analysis to a new corpus and introduce a new sentiment lexicon, VADER. The first step involves retrieving sentiment scores using the AFINN, Bing, and NRC lexicons.
+```{r setup, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidytext)
+```
+
+```{r setup1, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+get_sentiments("afinn")
+```
+
+```{r setup2, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+get_sentiments("bing")
+```
+
+
+```{r setup3, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+get_sentiments("nrc")
+```
+
+This example is using Jane Austen’s novels, so those novels will be imported,
+and the data will be tidied by grouping the text by book, numbering each line,
+and identifying chapter breaks based on common chapter headings. Finally, the 
+text is split into individual words, making it ready for text analysis.
+
+```{r setup4, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+get_sentiments("afinn")
+library(janeaustenr)
+library(dplyr)
+library(stringr)
+
+tidy_books <- austen_books() %>%
+  group_by(book) %>%
+  mutate(
+    linenumber = row_number(),
+    chapter = cumsum(str_detect(text, 
+                                regex("^chapter [\\divxlc]", 
+                                      ignore_case = TRUE)))) %>%
+  ungroup() %>%
+  unnest_tokens(word, text)
+```
+Used the NRC lexicon and filter() for the joy words from the book Emma.
+
+```{r setup5, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+
+nrc_joy <- get_sentiments("nrc") %>% 
+  filter(sentiment == "joy")
+
+tidy_books %>%
+  filter(book == "Emma") %>%
+  inner_join(nrc_joy) %>%
+  count(word, sort = TRUE)
+
+```
+inner_join() was used to perform the sentiment analysis.
+```{r setup6, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyr)
+
+jane_austen_sentiment <- tidy_books %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(book, index = linenumber %/% 80, sentiment) %>%
+  pivot_wider(names_from = sentiment, values_from = n, values_fill = 0) %>% 
+  mutate(sentiment = positive - negative)
+
+```
+```{r setup7, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(ggplot2)
+
+ggplot(jane_austen_sentiment, aes(index, sentiment, fill = book)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~book, ncol = 2, scales = "free_x")
+```
+
+```{r setup8, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+
+pride_prejudice <- tidy_books %>% 
+  filter(book == "Pride & Prejudice")
+
+pride_prejudice
+```
+The three different lexicons are comapared using the novel pride and prejudice, which was filtered for. Then inner_join() is for bing and nrc since they both measure in a binary form. Where as afinn is numeric, so it is mutated.
+```{r setup9, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+
+afinn <- pride_prejudice %>% 
+  inner_join(get_sentiments("afinn")) %>% 
+  group_by(index = linenumber %/% 80) %>% 
+  summarise(sentiment = sum(value)) %>% 
+  mutate(method = "AFINN")
+
+bing_and_nrc <- bind_rows(pride_prejudice %>% 
+                            inner_join(get_sentiments("bing")) %>%
+                            mutate(method = "Bing et al."),
+                          pride_prejudice %>% 
+                            inner_join(get_sentiments("nrc") %>% 
+                                         filter(sentiment %in% c("positive", 
+                                                                 "negative"))) %>%
+                            mutate(method = "NRC")) %>%
+  count(method, index = linenumber %/% 80, sentiment) %>%
+  spread(sentiment, n, fill = 0) %>%
+  mutate(sentiment = positive - negative)
+
+
+bind_rows(afinn, 
+          bing_and_nrc) %>%
+  ggplot(aes(index, sentiment, fill = method)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~method, ncol = 1, scales = "free_y")
+```
+
+
+The count sentiment for each lexicon.
+```{r setup10, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+
+get_sentiments("nrc") %>% 
+  filter(sentiment %in% c("positive", "negative")) %>% 
+  count(sentiment)
+
+get_sentiments("bing") %>% 
+  count(sentiment)
+```
+
+**Most common potive and negative words**
+
+Are calculated by using the count data and then vizualized with word clouds in the following chunks. 
+
+```{r setup11, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+
+bing_word_counts <- tidy_books %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(word, sentiment, sort = TRUE) %>%
+  ungroup()
+
+bing_word_counts
+
+bing_word_counts %>%
+  group_by(sentiment) %>%
+  slice_max(n, n = 10) %>% 
+  ungroup() %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(n, word, fill = sentiment)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~sentiment, scales = "free_y") +
+  labs(x = "Contribution to sentiment",
+       y = NULL)
+
+
+custom_stop_words <- bind_rows(tibble(word = c("miss"),  
+                                      lexicon = c("custom")), 
+                               stop_words)
+
+custom_stop_words
+```
+
+**Word Cloud**
+
+```{r setup12, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+#install.packages("wordcloud")
+library(wordcloud)
+
+tidy_books %>%
+  anti_join(stop_words) %>%
+  count(word) %>%
+  with(wordcloud(word, n, max.words = 100))
+```
+
+```{r setup13, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+library(reshape2)
+
+tidy_books %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(word, sentiment, sort = TRUE) %>%
+  acast(word ~ sentiment, value.var = "n", fill = 0) %>%
+  comparison.cloud(colors = c("gray20", "gray80"),
+                   max.words = 100)
+```
+**Looking at Units beyond Just Words**
+
+```{r setup14, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+
+p_and_p_sentences <- tibble(text = prideprejudice) %>% 
+  unnest_tokens(sentence, text, token = "sentences")
+
+
+p_and_p_sentences$sentence[2]
+
+
+austen_chapters <- austen_books() %>%
+  group_by(book) %>%
+  unnest_tokens(chapter, text, token = "regex", 
+                pattern = "Chapter|CHAPTER [\\dIVXLC]") %>%
+  ungroup()
+
+austen_chapters %>% 
+  group_by(book) %>% 
+  summarise(chapters = n())
+```
+
+```{r setup15, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+
+
+bingnegative <- get_sentiments("bing") %>% 
+  filter(sentiment == "negative")
+
+wordcounts <- tidy_books %>%
+  group_by(book, chapter) %>%
+  summarize(words = n())
+
+tidy_books %>%
+  semi_join(bingnegative) %>%
+  group_by(book, chapter) %>%
+  summarize(negativewords = n()) %>%
+  left_join(wordcounts, by = c("book", "chapter")) %>%
+  mutate(ratio = negativewords/words) %>%
+  filter(chapter != 0) %>%
+  slice_max(ratio, n = 1) %>% 
+  ungroup()
+```
+
+**VADAR Lexicon**
+
+As an additional layer, I will include the VADER lexicon. While it is typically
+used for social media analysis, I thought it would fit Grimm's Fairy Tales well 
+because its ability to capture nuanced sentiments in text can reveal the
+underlying emotional tones present in these classic stories. Given the complex
+characters and moral dilemmas within the tales, VADER’s focus on both positive
+and negative sentiments will enhance the overall understanding of the narratives
+emotional landscape.
+
+While trying to run VADER, I encountered several difficulties that slowed down 
+the process significantly. Initially, the full dataset caused long processing
+times, likely due to its size and complexity, which made it challenging to
+manage and analyze efficiently. Additionally, I faced warnings regarding the 
+data structure, such as the message indicating that the number of items to 
+replace was not a multiple of the replacement length. This suggested there 
+were mismatches in the expected data format, leading to further complications.
+
+
+Given these challenges, I decided to simplify my approach and run the VADER
+sentiment analysis on only a sample of the data. By focusing on a smaller 
+subset, I could more effectively troubleshoot any issues and achieve quicker 
+results, ultimately allowing for a clearer understanding of the sentiment
+dynamics present in Grimm's Fairy Tales without the overwhelming burden of
+processing the entire dataset at once.
+
+```{r setup16, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+# re-imported data so i can do it line by line instead of by word
+#grimm_text <- readLines("C:/Users/tiffh/Downloads/Assignment#10/grimm.txt")
+#grimm_df <- data.frame(text = grimm_text, stringsAsFactors = FALSE)
+#print(head(grimm_df))
+
+# subset of the first 100 lines for faster processing
+#sample_grimm_df <- grimm_df[1:100, ]
+
+# sentiment analysis on the sample
+#vader_results_sample <- vader_df(sample_grimm_df)
+
+#print(head(vader_results_sample))
+#colnames(vader_results_sample)
+
+#stats on smaple
+#summary_statistics <- vader_results_sample %>%
+  #summarise(
+   # mean_positive = mean(pos, na.rm = TRUE),
+   # mean_negative = mean(neg, na.rm = TRUE),
+   # mean_neutral = mean(neu, na.rm = TRUE),
+    #mean_compound = mean(compound, na.rm = TRUE)
+#  )
+
+#print(summary_statistics)
+
+#plot 
+#sentiment_counts <- vader_results_sample %>%
+ # summarise(
+  #  Positive = sum(pos > 0, na.rm = TRUE),
+   # Negative = sum(neg > 0, na.rm = TRUE),
+   # Neutral = sum(neu > 0, na.rm = TRUE)
+#  ) %>%
+ # pivot_longer(cols = everything(), names_to = "Sentiment", values_to = "Count")
+
+# Plot the counts
+#ggplot(sentiment_counts, aes(x = Sentiment, y = Count, fill = Sentiment)) +
+ # geom_bar(stat = "identity") +
+ # labs(title = "Counts of Positive, Negative, and Neutral Sentiments",
+  #     x = "Sentiment Type",
+    #   y = "Count") +
+  #theme_minimal()
+
+```
+
+In examining the sentiments uncover some intriguing insights.
+The average positive sentiment score is around 0.066, indicating a modest level
+of positivity in the narratives. In comparison, the mean negative sentiment
+score is slightly lower at 0.042, suggesting that negativity is less prevalent 
+in these tales., which is surprising to me. 
+
+What stands out is the high neutral score of 0.892. This reflects a tendency 
+for the language in the stories to be descriptive and straightforward, rather 
+than heavily emotional. The overall compound score, which averages 0.054, 
+supports this observation, indicating that while there is a hint of positivity,
+the overall sentiment leans more towards neutrality.
+
+Overall, these findings provide a snapshot of the sentiment present in the
+sample analyzed, but they may not be representative of every story within 
+Grimm's Fairy Tales due to the limited nature of the sample.
+
+**Conclusion**
+
+This is my first time using lexicons, and it has been a highly insightful
+experience for word analysis. Exploring the various sentiment analysis packages 
+available has opened my eyes to the diverse methods and tools at my disposal fo
+r understanding language in depth. The ability to quantify and visualize 
+sentiments associated with specific words has enhanced my appreciation for the 
+subtleties of text and provided valuable insights that can be applied to future 
+analyses. I look forward to further exploring these resources and expanding my 
+skills in text mining.
+
+
+**Reference**
+
+Silge, Julia, and David Robinson. "Sentiment Analysis." Tidy Text Mining.
+Last modified August 21, 2023. https://www.tidytextmining.com/sentiment#most-
+positive-negative.
+
+GeeksforGeeks. 2024. “Python Sentiment Analysis Using VADER.” 
+Accessed November 2, 2024. https://www.geeksforgeeks.org/python-sentiment-
+analysis-using-vader/.
+
+“VADER: Valence Aware Dictionary and sEntiment Reasoner.” 2024. 
+Accessed November 2, 2024. https://cran.r-project.org/web/packages/vader/vader.
+pdf.cal skills in text mining.
+
+
+
+
+

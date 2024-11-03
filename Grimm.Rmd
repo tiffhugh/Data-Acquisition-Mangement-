@@ -1,0 +1,347 @@
+---
+title: "Assignment#10"
+author: "Tiffany Hugh"
+date: "2024-11-02"
+output: html_document
+---
+**Introduction**
+
+For Assignment #10, I will conduct a sentiment analysis of Grimm's Fairy Tales
+by Jacob and Wilhelm Grimm, sourced from Project Gutenberg. This analysis will
+apply the Bing, AFINN, NRC, and Vader sentiment lexicons to explore the
+emotional tone of the text.
+
+**Source**
+
+Project Gutenberg offers free eBooks where I was able to download the Grimm's 
+Fairy Tale as a txt file. In order to work with the text I first need to
+convert the text to lowercase to standardize it.Remove punctuation, numbers, and
+special characters. Which will help me tokenize the text into individual words 
+for analysis. 
+
+**Import and Tidy**
+Before that all happens, I need the appropriate packages to access sentiment
+lexicons, clean and manipulate text, and join sentiment scores to my text data.
+```{r setup, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#install.packages(c("tidytext", "textdata", "vader", "dplyr", "tidyr"))
+library(tidytext); library(textdata); library(vader); library(dplyr); library(tidyr)
+
+# import txt file 
+grimm_text<- readLines("C:/Users/tiffh/Downloads/Assignment#10/grimm.txt")
+
+# convert to data frame
+grimm_df <- data.frame(line = 1:length(grimm_text), text = grimm_text) %>%
+  unnest_tokens(word, text)
+```
+
+**Bing Lexicon **
+The Bing lexicon classifies words into positive and negative categories, 
+offering a clear measure of sentiment polarity. To begin the analysis, first 
+sentiment scores are extract by applying the Bing lexicon. This involves using
+the inner_join function to merge the tokenized words with their corresponding
+sentiment classifications, allowing quantification of positive and 
+negative words in the text.
+```{r setup2, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+
+bing_sentiments <- get_sentiments("bing")
+# count sentiments in the Grimm text
+grimm_sentiment <- grimm_df %>%
+  inner_join(bing_sentiments) %>%
+  count(index = line %/% 80, sentiment) %>%
+  spread(sentiment, n, fill = 0) %>%
+  mutate(sentiment = positive - negative)
+
+#install.packages("ggplot2")
+library(ggplot2)
+# plot
+ggplot(grimm_sentiment, aes(index, sentiment)) +
+  geom_col(aes(fill = sentiment), show.legend = FALSE) +
+  labs(title = "Sentiment Analysis of Grimm Fairy Tales",
+       x = "Index",
+       y = "Sentiment Score") +
+  theme_minimal()
+```
+
+The plot illustrates how sentiment shifts between positive and negative 
+throughout the narrative arc of the Grimm Fairy Tales. Given that the collection
+comprises multiple distinct stories, the sentiment at the beginning tends to be
+more negative, while the later tales exhibit a more positive sentiment. This 
+variability reflects the diverse themes and emotional tones present within the
+different stories in the collection.
+
+**NRC Lexicon**
+
+The NRC lexicon categorizes words into eight emotional categories along with 
+positive or negative sentiment, offering a broad emotional profile of the text.
+From the Bing sentiment and the knowlege that Grimm's tales will be more negative
+sentiments. I focused on sadness, by filtering for sad words and then join the 
+text with the nrc sadness words. A count is taken of the sadness words and joined
+for analysis. 
+```{r setup3, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+nrc_sadness <- get_sentiments("nrc") %>%
+  filter(sentiment == "sadness")
+# count occurrences of sadness words in text
+sadness_word_counts <- grimm_df %>%
+  inner_join(nrc_sadness, by = "word") %>%  
+  count(word, sort = TRUE)                  
+
+print(sadness_word_counts)
+
+# join data with sadness words for detailed inspection
+sadness_words_joined <- grimm_df %>%
+  inner_join(nrc_sadness, by = "word")    
+
+print(sadness_words_joined)
+
+# subset for top sadness words 
+top_sadness_words <- sadness_words_joined %>%
+  count(word) %>%                 
+  top_n(10, wt = n)               
+
+# plot
+ggplot(top_sadness_words, aes(x = reorder(word, n), y = n)) +
+  geom_bar(stat = "identity", fill = "purple") + 
+  coord_flip() +                                 
+  labs(title = "Top 10 Sadness Words in Grimm's Fairy Tales",
+       x = "Sadness Words",
+       y = "Count") +                           
+  theme_minimal() 
+```
+
+I joined the text data with the NRC sadness lexicon to gain deeper insights
+into the words most commonly associated with the sentiment of sadness. Upon 
+conducting this analysis, I discovered that the word "mother" emerged as the 
+top sadness word in the dataset. To ensure accuracy, I performed a further
+inspection by filtering for sadness words only, yet surprisingly, "mother" 
+still ranked high.I assumed there would be more words associated with sadness
+but maybe another emotion would better fit the text. 
+
+**AFINN Lexicon**
+
+The AFINN lexicon assigns words with numerical scores (-5 to 5) based on their
+emotional intensity, helping to capture varying levels of sentiment. The first 
+step is to get sentiment scores using the AFINN lexicon, and then using inner_
+join function will match the words in your tokenized text with the words from
+the text. 
+```{r setup1, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+
+afinn_sentiments <- get_sentiments("afinn")
+
+afinn_results <- grimm_df %>%
+  inner_join(afinn_sentiments, by = "word") %>%
+  count(word, score = value, sort = TRUE)
+
+cat("AFINN Sentiment Analysis Results:\n")
+print(head(afinn_results))
+
+
+# selection of the top 10 positive and negative sentiments
+top_positive_words <- afinn_results %>%
+  filter(score > 0) %>%
+  top_n(10, score)
+
+top_negative_words <- afinn_results %>%
+  filter(score < 0) %>%
+  arrange(score) %>%  # Arrange by score in ascending order
+  slice_head(n = 10) 
+
+# plot 
+positive <- ggplot(top_positive_words, aes(x = reorder(word, score), y = score, fill = "Positive")) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs(title = "Top Positive AFINN Sentiment Words in Grimm's Fairy Tales",
+       x = "Words",
+       y = "Sentiment Score") +
+  scale_fill_manual(values = "gold") +
+  theme_minimal()
+
+negative <- ggplot(top_negative_words, aes(x = reorder(word, score), y = score, fill = "Negative")) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs(title = "Top Negative AFINN Sentiment Words in Grimm's Fairy Tales",
+       x = "Words",
+       y = "Sentiment Score") +
+  scale_fill_manual(values = "blue") +
+  theme_minimal()
+
+print(positive)
+print(negative)
+```
+
+There were many words, so I examined the top 10 for both positive and negative
+sentiments. These are presented in separate plots. The top positive words are 
+associated with themes of celebration, joy, and humor. In contrast, the negative
+sentiments reflect more distressing themes, including violence and derogatory 
+language. 
+
+**Comparison**
+
+I’m looking to see which lexicon from Chapter 2 works best for Grimm's Fairy 
+Tales. I’ll put together a summary for each lexicon to show how well they
+reflect the story's sentiments.
+```{r setup5, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+# Prepare a summary for each lexicon
+bing_summary <- grimm_df %>%
+  inner_join(bing_sentiments, by = "word") %>%
+  count(sentiment, sort = TRUE) %>%
+  mutate(lexicon = "Bing")
+
+nrc_sentiments <- get_sentiments("nrc")
+nrc_summary <- grimm_df %>%
+  inner_join(nrc_sentiments, by = "word") %>%
+  count(sentiment, sort = TRUE) %>%
+  mutate(lexicon = "NRC")
+
+afinn_summary <- grimm_df %>%
+  inner_join(afinn_sentiments, by = "word") %>%
+  count(score = value, sort = TRUE) %>%
+  mutate(sentiment = ifelse(score > 0, "Positive", "Negative"),
+         lexicon = "AFINN") %>%
+  group_by(sentiment, lexicon) %>%
+  summarize(n = sum(n), .groups = 'drop')
+
+# Combine all summaries
+combined_summary <- bind_rows(bing_summary, nrc_summary, afinn_summary)
+
+# Print the combined summary
+print(combined_summary)
+
+# Plot the comparison of sentiment counts across lexicons
+ggplot(combined_summary, aes(x = lexicon, y = n, fill = sentiment)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Comparison of Sentiment Lexicons on Grimm's Fairy Tales",
+       x = "Lexicon",
+       y = "Count") +
+  theme_minimal()
+
+```
+
+This chart compares three different sentiment lexicons—AFINN, Bing, and NRC—used
+to analyze sentiments in Grimm's Fairy Tales. Each lexicon has its strengths: 
+AFINN gives an overall sentiment count, while Bing captures positive and negative 
+sentiments. However, neither really dives into the specific emotions that fairy
+tales often express, which can be quite complex. That’s why I believe NRC is the
+best fit. It’s the most comprehensive, capturing specific emotions like anger, 
+anticipation, joy, sadness, and more. Since fairy tales are full of varied 
+emotions, NRC offers deeper insights, allowing for a better understanding of 
+the emotional landscape in Grimm's stories. Based on this chart, NRC stands out 
+as the most suitable lexicon for analyzing sentiments in Grimm's Fairy Tales 
+because it covers a wide range of specific emotions, providing a richer 
+emotional analysis.
+
+
+**VADAR Lexicon**
+
+As an additional layer, I will include the VADER lexicon. While it is typically
+used for social media analysis, I thought it would fit Grimm's Fairy Tales well 
+because its ability to capture nuanced sentiments in text can reveal the
+underlying emotional tones present in these classic stories. Given the complex
+characters and moral dilemmas within the tales, VADER’s focus on both positive
+and negative sentiments will enhance the overall understanding of the narratives
+emotional landscape.
+
+While trying to run VADER, I encountered several difficulties that slowed down 
+the process significantly. Initially, the full dataset caused long processing
+times, likely due to its size and complexity, which made it challenging to
+manage and analyze efficiently. Additionally, I faced warnings regarding the 
+data structure, such as the message indicating that the number of items to 
+replace was not a multiple of the replacement length. This suggested there 
+were mismatches in the expected data format, leading to further complications.
+
+
+Given these challenges, I decided to simplify my approach and run the VADER
+sentiment analysis on only a sample of the data. By focusing on a smaller 
+subset, I could more effectively troubleshoot any issues and achieve quicker 
+results, ultimately allowing for a clearer understanding of the sentiment
+dynamics present in Grimm's Fairy Tales without the overwhelming burden of
+processing the entire dataset at once.
+
+```{r setup6, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+# re-imported data so i can do it line by line instead of by word
+grimm_text <- readLines("C:/Users/tiffh/Downloads/Assignment#10/grimm.txt")
+grimm_df <- data.frame(text = grimm_text, stringsAsFactors = FALSE)
+print(head(grimm_df))
+
+# subset of the first 100 lines for faster processing
+sample_grimm_df <- grimm_df[1:100, ]
+
+# sentiment analysis on the sample
+vader_results_sample <- vader_df(sample_grimm_df)
+
+print(head(vader_results_sample))
+colnames(vader_results_sample)
+
+#stats on smaple
+summary_statistics <- vader_results_sample %>%
+  summarise(
+    mean_positive = mean(pos, na.rm = TRUE),
+    mean_negative = mean(neg, na.rm = TRUE),
+    mean_neutral = mean(neu, na.rm = TRUE),
+    mean_compound = mean(compound, na.rm = TRUE)
+  )
+
+print(summary_statistics)
+
+#plot 
+sentiment_counts <- vader_results_sample %>%
+  summarise(
+    Positive = sum(pos > 0, na.rm = TRUE),
+    Negative = sum(neg > 0, na.rm = TRUE),
+    Neutral = sum(neu > 0, na.rm = TRUE)
+  ) %>%
+  pivot_longer(cols = everything(), names_to = "Sentiment", values_to = "Count")
+
+# Plot the counts
+ggplot(sentiment_counts, aes(x = Sentiment, y = Count, fill = Sentiment)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Counts of Positive, Negative, and Neutral Sentiments",
+       x = "Sentiment Type",
+       y = "Count") +
+  theme_minimal()
+
+```
+In examining the sentiments uncover some intriguing insights.
+The average positive sentiment score is around 0.066, indicating a modest level
+of positivity in the narratives. In comparison, the mean negative sentiment
+score is slightly lower at 0.042, suggesting that negativity is less prevalent 
+in these tales., which is surprising to me. 
+
+What stands out is the high neutral score of 0.892. This reflects a tendency 
+for the language in the stories to be descriptive and straightforward, rather 
+than heavily emotional. The overall compound score, which averages 0.054, 
+supports this observation, indicating that while there is a hint of positivity,
+the overall sentiment leans more towards neutrality.
+
+Overall, these findings provide a snapshot of the sentiment present in the
+sample analyzed, but they may not be representative of every story within 
+Grimm's Fairy Tales due to the limited nature of the sample.
+
+
+**Reference**
+
+Silge, Julia, and David Robinson. "Sentiment Analysis." Tidy Text Mining.
+Last modified August 21, 2023. https://www.tidytextmining.com/sentiment#most-
+positive-negative.
+
+GeeksforGeeks. 2024. “Python Sentiment Analysis Using VADER.” 
+Accessed November 2, 2024. https://www.geeksforgeeks.org/python-sentiment-
+analysis-using-vader/.
+
+“VADER: Valence Aware Dictionary and sEntiment Reasoner.” 2024. 
+Accessed November 2, 2024. https://cran.r-project.org/web/packages/vader/vader.pdf.
+
+
+*Chat gpt Questions*
+
+What would be the best soultion in fixing Warning: number of items to replace 
+is not a multiple of replacement length.
+
+How to speed up VADER processing? 
