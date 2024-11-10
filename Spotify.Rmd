@@ -1,0 +1,82 @@
+---
+title: 'Recommender Systems: Spotify'
+author: "Tiffany Hugh"
+date: "2024-11-10"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<h2>Introduction</h2>
+
+In Data Feminism, authors Catherine D'Ignazio and Lauren Klein talk about datafication as the process of transforming parts of the world that were never tracked or quantified before into data. By capturing and analyzing things like our behaviors, experiences, and even our environments, datafication turns these into data points that can be used for all sorts of purposes, like decision-making, spotting trends, and making predictions(1). D'Ignazio and Klein remind us that while datafication has a lot of potential, we should think critically about what gets tracked, and why, because it can either reinforce or challenge existing power dynamics.
+
+One place where datafication is really powerful—and where most of us experience it daily—is in recommendatory systems, which use data to deliver personalized content. For these systems, datafication is the fuel that makes everything work: user actions, preferences, and other behavior all feed into algorithms that help us find exactly what we want. Spotify is a great example of this. It uses our listening history to curate personalized playlists, recommend artists, and even suggest podcasts and audiobooks.
+
+Spotify’s “Made For You” section has categories like Uniquely Yours, Made For Us, Your Genre Mixes, Artist Mixes, Decade Mixes, Mood Mixes, Niche Mixes, and Daily Mixes. All of these recommendations keep us engaged and coming back, and they’re all powered by data. So, Spotify shows how datafication, when done well, can create a really customized experience for each listener. But it also makes us think about the choices behind the data—the benefits it brings us and the questions it raises.
+
+```{r twin, echo=FALSE, out.width="49%", out.height="20%", fig.cap="Spotify Made For You Page.", fig.align="center"}
+knitr::include_graphics("Made_For_You.png")
+```
+<h2>Scenario Design</h2>
+
+1.Who are target users? 
+Spotify's audience is diverse, with users in over 184 countries and markets. It attracts music enthusiasts who are always discovering new tunes, artists who publish their tracks, and podcast listeners, to name a few. According to Spotify, their main demographic consists of young adults, with a slight female majority, and their largest user bases are geographically centered in the United States, Europe, and Latin America(2).
+
+*Organization*
+
+2. What are their key goals? 
+
+Spotify’s main goal with its recommendation engine is to keep users engaged and coming back, building loyalty over time. By personalizing recommendations, Spotify aims to create an experience that’s compelling enough to encourage users to subscribe, making the service feel like a premium, tailored experience that’s worth the investment. Spotify even offers bundle plans like Hulu + Spotify for college students, duo and family plans so everyone can have separate accounts in the name that others using your profile will mess up algorithm. 
+
+*Users*
+
+2. What are their key goals? 
+
+Listeners’ ambitions are diverse, but using Spotify serves as a central platform for creating custom playlists, exploring different genres, sharing music with friends, staying updated on new releases, and enjoying audiobooks and podcasts.
+
+
+3. How can you help accomplish those goals? 
+
+To help Spotify accomplish its goal of building user engagement and loyalty, and providing users with a better-curated experience, there are several improvements that could be made to the recommendation system:
+
+```{r split, echo=FALSE, out.width="49%", out.height="20%", fig.align="center", fig.cap=" How Spotify Recommendation are curated."}
+knitr::include_graphics("Recommendation.jpg")
+```
+
+__Allow users to express disinterest:__ Just because a user listens to a song or podcast doesn’t mean they like it. Currently, while users can "like" songs which automatically gets saved to a playlist.There’s no easy way to indicate dislike. Adding a feature, such as a “thumbs down” or “don’t recommend again” option, would improve recommendations and allow users to better curate their listening experience.
+
+__Make the “remove from taste profile” feature more accessible:__ While users can remove content from their taste profile, this option is hidden and not intuitive. It would enhance user satisfaction if this feature were more easily accessible from the main interface, giving users greater control over the content that influences their recommendations.
+
+__Prevent overwhelming mainstream content:__ While this might be challenging, as Spotify generates revenue from streaming popular tracks, users who aren't interested in mainstream content can feel frustrated when it dominates their feeds. Offering users the ability to hide or limit promoted content from artists they’re not interested in would make the platform feel more personalized and ensure users aren’t overwhelmed with content they don't enjoy.
+
+<h2>Reverse Engineering</h2>
+
+To reverse engineer Spotify’s recommendation system, a great example is "Spotify Wrapped." This annual report offers insight into how Spotify collects and utilizes user data—such as listening history, skips, and repeats—to recognize individual and shared musical patterns. Features like "Discover Weekly" suggest that Spotify leverages collaborative filtering, recommending new songs based on the preferences of users with similar tastes.
+
+Available information online also points to Spotify's use of content-based filtering, where song attributes like genre, tempo, and mood help match users with similar tracks. Tools such as the ANNOY library enable Spotify to find songs with shared features quickly, making the recommendations efficient and relevant. Additionally, Spotify’s use of natural language processing (NLP) to analyze lyrics and metadata enhances cross-genre recommendations, introducing listeners to new music that aligns with their unique preferences(3).
+
+<h2>Improvement</h2>
+
+While I gave improvements in the scenior design: expressing disintrest, acessiability of "remove taste from profile", and prevalance of mainstream content.Another improvement to Spotify’s recommendation system would be allowing users access to previous mixes. Currently, the mixes are continuously updated to offer fresher recommendations, but creating a space where users could revisit past mixes would add value. This feature would give users a view of how their niche tastes have evolved over time, and let them compare the songs and artists highlighted in each playlist. This not only enhances personalization but also provides a nostalgic touch, helping users reflect on their musical journey and discover patterns in their listening habits.
+
+<h2>Conclusion</h2>
+
+Spotify’s recommendation system exemplifies how datafication transforms user behavior into valuable insights, allowing the platform to deliver a highly personalized experience. With continued innovation, Spotify can foster deeper engagement and satisfaction for its diverse audience. However, users need to be more aware of how their data is often monetized. Spotify should be more transparent about how user data is used and offer insights into how it enhances the overall experience, allowing users to feel more comfortable with their data being collected and utilized(4).
+
+<h2>Reference</h2>
+
+(1) D'Ignazio, Catherine, and Lauren F. Klein. Data Feminism. Cambridge, MA: MIT Press, 2020.
+
+(2) Start.io. "Spotify Target Market Segmentation – User Demographics & Audience Targeting Strategy for 2022." Start.io. Accessed November 10, 2024. https://www.start.io/blog/spotify-target-market-segmentation-user-demographics-audience-targeting-strategy/#:~:text=The%20Spotify%20target%20audience%20is,these%20and%20other%20data%20points.
+
+(3) Lighthouse Labs. "How Does Spotify Wrapped Work?" Lighthouse Labs, accessed November 10, 2024. https://www.lighthouselabs.ca/en/blog/how-does-spotify-wrapped-work#:~:text=Anyone%20who%20listens%20to%20at,the%20mass%20amounts%20of%20data.
+
+(4) Wall Street Journal. "How Spotify Wrapped Does Data Collection Without Being Creepy." Wall Street Journal, published December 6, 2022. https://www.wsj.com/podcasts/tech-news-briefing/how-spotify-wrapped-does-data-collection-without-being-creepy/de1b2376-c24e-4279-bae4-d2ae39bea59f.
+
+
+
+
+
