@@ -1,0 +1,79 @@
+---
+title: "Tidyverse"
+author: "Tiffany Hugh"
+date: "2024-11-10"
+output: html_document
+---
+
+__Overview__
+
+This vignette demonstrates the effective use of mutate() and case_when() from the dplyr package to streamline multiple conditional transformations into a single, readable function. This approach is especially useful for recoding ordinal survey responses or creating custom categories from survey data. Additionally, str_detect() from the stringr package is utilized for pattern matching within text data. The goal is to showcase how TidyVerse functions can simplify and enhance data manipulation workflows. 
+
+__Source__
+
+The data used in this vignette comes from a masculinity survey of 1,615 adult men, conducted by SurveyMonkey in partnership with FiveThirtyEight and WNYC Studios. The survey was designed to explore perceptions of masculinity among U.S. men, with responses weighted to reflect the demographic composition of the United States.
+
+__Packages and Libraries__
+
+Tidyverse encompasses all necessary libraries: dplyr, tidyr, stringr, and readr
+
+```{r setup, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+install.packages("tidyverse")
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(readr)
+``` 
+
+__Import Data__
+
+```{r setup1, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+masculinity_survey <- read_csv("masculinity-survey.csv")
+View(masculinity_survey)
+```
+
+__Tidying Data__
+
+The data required restructuring to improve usability. Column names were standardized, the survey question was applied uniformly to each response, and any missing values were removed.
+
+```{r setup2, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+#create column names
+colnames(masculinity_survey) <- c("Question", "Response", "Adult_Men", "Age_18_34", "Age_35_64", "Age_65_up",
+                    "White", "Non_White", "Has_Children", "No_Children", "Straight", "Gay_Bisexual")
+# lets the question follow each response
+masculinity_survey <- masculinity_survey %>%
+  fill(Question, .direction = "down")
+# create df
+masculinity_df <- masculinity_survey %>%
+  drop_na() 
+```
+
+__mutate,case_when,& str_detect__
+
+In this masculinity survey analysis, we need to categorize the questions into broader themes to make interpretation easier and streamline analysis. This can be done by creating a new column, Question_Category, which groups related questions under unified topics.
+
+The mutate() function from the dplyr package is ideal here, as it allows us to add or modify columns in a data frame. We’ll use case_when() to map specific keywords in the Question column to corresponding categories, reflecting themes like "Personal Identity and Masculinity," "Relationships and Emotional Expression," and more. Each category groups questions based on shared themes, enabling deeper insights into different aspects of masculinity.
+
+In the code below, str_detect from the stringr package searches for keywords within Question text to identify patterns. Based on these patterns, case_when assigns each question a relevant category
+
+```{r setup3, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+
+masculinity_df <- masculinity_df %>%
+  mutate(
+    Question_Category = case_when(
+      str_detect(Question, "masculine|manly") ~ "Personal Identity and Masculinity",
+      str_detect(Question, "pressure|society|worry|expected|ideas") ~ "Societal Expectations and Pressures",
+      str_detect(Question, "friend|physical affection|Cry|lonely|isolated|therapist|hug|advice") ~ "Relationships and Emotional Expression",
+      str_detect(Question, "sexual relations|romantic|intimate|interest|boundaries|#MeToo|pays") ~ "Sexuality and Romantic Behavior",
+      str_detect(Question, "sports|Work out|fight|hobbies") ~ "Physical Activities and Hobbies",
+      str_detect(Question, "therapist|lonely|well-being|health") ~ "Health and Support",
+      str_detect(Question, "employment|work|job|income|assets|debt|provide for") ~ "Demographics and Background",
+      str_detect(Question, "married|children|widowed|divorced|separated|sexual orientation|age|school|Are you") ~ "Demographics and Background",
+      TRUE ~ "Other"
+    )
+  )
+```
