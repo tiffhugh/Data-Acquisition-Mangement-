@@ -1,0 +1,564 @@
+---
+title: "Laugh Tale"
+author: "Tiffany Hugh"
+date: "2024-11-29"
+output: html_document
+---
+
+__Introduction__
+
+One piece is a popular manga, anime, and now live action created by Eiichiro Oda. 
+It is one of the longest-running and most successful anime franchises in history.
+It follows the adventures of Monkey D. Luffy and his crew, the Straw Hat Pirates, as they search for the legendary treasure called the One Piece, which would make Luffy the King of Pirates. Along the way, they navigate complex conflicts, form deep bonds, and challenge oppressive forces.
+
+__Significance of One Piece__
+
+The popularity and longevity of One Piece make it a remarkable case study for understanding how a narrative can captivate audiences for over two decades. One of the key reasons for its enduring success is the exploration of universal themes such as Friendship, Loyalty, Rebellion, Betrayal, Sacrifice, and Dreams. These themes transcend cultural boundaries, allowing viewers to connect emotionally with the characters and storylines. By examining these themes across pivotal sagas, we can gain insights into how One Piece maintains its emotional resonance and why it continues to engage audiences across generations.
+
+__Research Question__
+
+How does the emotional tone and thematic depth of One Piece contribute to its enduring popularity and audience engagement across its sagas?
+
+__Data Collection__
+
+The metadata for this project was collected from Kaggle, which provided data scraped from IMDb. This dataset includes key information such as the season, episode number, episode title, year released, total votes, and average rating for each episode. Since One Piece has over 1,000 episodes, I focused on the most popular episodes based on their average ratings to conduct a meaningful text analysis.
+
+However, obtaining episode transcripts presented several challenges. Popular transcript websites like Subslikescript did not have all the episodes I wanted to analyze, while Forever Dreaming provided paraphrased content instead of accurate transcripts. Additionally, since I needed English-dubbed versions, finding usable transcripts became even more complex.
+
+To overcome these obstacles, I screen-recorded the selected episodes, converted the recordings into MP3 audio files, and in Python I utilized Whisper, an open-source speech recognition model developed by OpenAI, to transcribe the audio into text files. Whisper efficiently transcribes spoken language into written text, enabling me to generate accurate transcripts for the selected episodes and proceed with the text analysis.
+
+_Importing Data_
+```{r setup, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+#import dataset 
+library(readr)
+ONE_PIECE <- read_csv("ONE PIECE.csv")
+View(ONE_PIECE)
+
+```
+
+After importing the dataset, I removed unnecessary columns. I then created a Saga category to group episodes by the saga they belong to.Episodes that did not fit into the main story arcs were categorized as Filler episodes, which are episodes that are not part of the original manga’s storyline. They are often created to give the manga time to advance or to add extra content that doesn’t affect the main plot. While filler episodes can provide additional character development or side stories, they are generally considered non-essential to the core narrative.
+
+```{r setup1, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+#install.packages("dplyr")
+library(dplyr)
+#remove cplumns 
+Luffy <- ONE_PIECE %>% select(-1, -2, -3,-4)
+# add arc
+Luffy <- Luffy %>%
+  mutate(saga = case_when(
+    episode >= 1 & episode <= 61 ~ "East Blue",
+    episode >= 61 & episode <= 130 ~ "Alabasta",
+    episode >= 144 & episode <= 195 ~ "Skypiea",
+    episode >= 207 & episode <= 325 ~ "Water 7",
+    episode >= 337 & episode <= 381 ~ "Thriller Bark",
+    episode >= 385 & episode <= 516 ~ "Summit War",
+    episode >= 517 & episode <= 574 ~ "Fish-Man Island",
+    episode >= 579 & episode <= 746 ~ "Dressrosa",
+    episode >= 751 & episode <= 877 ~ "Whole Cake Island",
+    episode >= 892 ~ "Wano",
+    TRUE ~ "Filler" 
+  ))
+
+```
+__Exploratory Statistics__
+
+One Piece is known as the anime that gets better over time, both in animation and story. To explore the trends in its popularity, I analyzed the average episode ratings across different years, 
+
+```{r setup2, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# year avg_rating 
+year_stats <- Luffy %>%
+  group_by(start) %>%
+  summarize(avg_rating = mean(average_rating, na.rm = TRUE)) %>%
+  arrange(desc(avg_rating))
+
+#install.packages("ggplot2")
+library(ggplot2)
+ggplot(year_stats, aes(x = start, y = avg_rating)) +
+  geom_line(color = "purple") + 
+  geom_point(color = "red") + 
+  labs(title = "Average Ratings Over Time",
+       x = "Year",
+       y = "Average Rating") +
+  scale_x_continuous(breaks = seq(min(year_stats$start), max(year_stats$start), by = 1)) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+This line chart displays the average ratings of One Piece episodes from 1999 to 2021. Each point represents the mean rating for episodes released in a given year. The chart reveals several key patterns:
+
+ 1.Consistency with Gradual Growth: In the early years, the ratings remained relatively stable, hovering around 7.5 to 8.0. This suggests a consistent level of viewer satisfaction during the show's initial growth phase.
+
+ 2.Noticeable Peaks and Troughs: There are clear peaks, such as in 2010 and 2015, indicating years where episodes were particularly well-received. Conversely, occasional dips suggest periods of slower pacing or less impactful episodes.
+
+ 3.Significant Rise in Recent Years: The dramatic increase in ratings around 2021 suggests renewed interest or major improvements, possibly due to enhanced animation quality or compelling story developments.
+
+Overall, this chart highlights One Piece's enduring appeal and its ability to captivate audiences over decades, with ratings steadily climbing as the series progresses.
+
+Similar analysis is done to see the average rating across Sagas. 
+
+```{r setup2.1, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+# avg_rating by saga
+saga_stats <- Luffy %>%
+  group_by(saga) %>%
+  summarize(avg_rating = mean(average_rating, na.rm = TRUE)) %>%
+  arrange(desc(avg_rating))
+
+ggplot(saga_stats, aes(x = avg_rating, y = reorder(saga, avg_rating), color = saga)) +
+  geom_point(size = 5) +
+  labs(
+    title = "Average Ratings by Saga",
+    x = "Average Rating",
+    y = "Saga"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 16, face = "bold", hjust = 0.5),
+    axis.text = element_text(size = 12),
+    axis.title = element_text(size = 14),
+    legend.position = "none"
+  )
+```
+
+This dot plot displays the average episode ratings for each saga. Filler episodes not surprisingly has the lowest average rating as they are not essential to the narrative. East Blue and Alabsasta are earlier sagas and it shows exponential growth with each Saga with Wano one of the newer Saga with the highest rating. The only outlier I see is Fish-Man Island as it is the first saga after the time skip and it has the lowest low rating among the acutal sagas. 
+
+```{r setup2.2, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+#combine viz
+ggplot(Luffy %>%
+         group_by(start, saga) %>%
+         summarize(avg_rating = mean(average_rating, na.rm = TRUE)) %>%
+         ungroup(), aes(x = start, y = avg_rating, color = saga)) +
+  geom_line(size = 1) +
+  geom_point(size = 2) +
+  labs(
+    title = "Average Ratings Over Time by Saga",
+    x = "Year",
+    y = "Average Rating"
+  ) +
+  scale_x_continuous(breaks = seq(min(Luffy$start), max(Luffy$start), by = 1)) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.title = element_text(size = 16, face = "bold", hjust = 0.5)
+  )
+```
+
+This line chart tracks the average episode ratings over time, segmented by saga,which is a combination of the two graphs above. It shows the earlier sagas start with moderate ratings but show improvement as the series gains momentum. Ratings fluctuate for filler episodes, reflecting their varying quality. More recent sagas show a noticeable upward trend, suggesting that One Piece has maintained or even improved its storytelling quality over the years.This visualization highlights both the series' growth in popularity and how different sagas have impacted its ratings trajectory. 
+
+__Top Sagas__
+
+The top sagas were identified as —Dressrosa, Summit War, Whole Cake Island, and Wano—, known for their emotional depth, high-stakes battles, and significant plot developments.  To further explore what makes these sagas stand out, I will identify the top three highest-rated episodes from each saga. By analyzing these episodes, I aim to uncover key narrative elements, pivotal moments, or character-driven events that contribute to their exceptional ratings. 
+
+```{r setup3, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+# identify top ep in top saga 
+top_episodes_sagas <- Luffy %>%
+  filter(saga %in% c("Summit War", "Whole Cake Island", "Wano","Dressrosa")) %>%
+  group_by(saga) %>%
+  arrange(desc(average_rating)) %>%
+  slice(1:3) 
+
+print(top_episodes_sagas)
+```
+
+__Transcript of Top Episodes__
+
+I have obtained the transcripts for the 12 episodes I intend to analyze. With the support of ChatGPT, I developed a function to streamline the process of transforming the transcripts into a tidy format. This function efficiently compiles the text into a tibble, tokenizes the text into individual words, and removes stop words and punctuation. By breaking the text down in this way, I can effectively analyze sentiments using the NRC and Bing lexicons, which will be instrumental in identifying recurring themes and emotional tones within these sagas.
+
+```{r setup4, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#install.packages("tidytext")  
+#install.packages("stringr")
+#install.packages("dplyr") 
+library(tidytext)
+library(stringr)
+library(dplyr)
+library(readr) 
+library(tibble)
+
+# Define the function to process each episode
+process_episode <- function(ep_text_file) {
+  EP_text <- readLines(ep_text_file, warn = FALSE)
+  # Create a tibble from the text
+  text_df <- tibble(line = 1:length(EP_text), text = EP_text)
+  # Tokenize the text into words
+  tidy_text <- text_df %>%
+    unnest_tokens(word, text)
+  # Remove stop words
+  data("stop_words")
+  tidy_text_clean <- tidy_text %>%
+    anti_join(stop_words, by = "word")
+  # Remove punctuation and numbers, then filter out empty strings
+  tidy_text_clean <- tidy_text_clean %>%
+    mutate(word = str_replace_all(word, "[^a-zA-Z]", "")) %>%
+    filter(word != "")
+  # Convert to lowercase for consistency
+  tidy_text_clean <- tidy_text_clean %>%
+    mutate(word = tolower(word))
+  # Perform word frequency analysis
+  word_counts <- tidy_text_clean %>%
+    count(word, sort = TRUE)
+  # Perform NRC sentiment analysis
+  nrc_sentiment <- tidy_text_clean %>%
+    inner_join(get_sentiments("nrc"), by = "word") %>%
+    count(sentiment, sort = TRUE)
+  # Perform Bing sentiment analysis
+  bing_sentiment <- tidy_text_clean %>%
+    inner_join(get_sentiments("bing"), by = "word") %>%
+    count(sentiment, sort = TRUE)
+  # Return the results (word counts, NRC sentiment, and Bing sentiment)
+  return(list(
+    word_counts = word_counts, 
+    nrc_sentiment = nrc_sentiment,
+    bing_sentiment = bing_sentiment
+  ))
+}
+
+episodes <- list(
+  "Summit War" = c("EP 405.txt", "EP 483.txt", "EP 485.txt"),
+  "Whole Cake Island" = c("EP 804.txt", "EP 808.txt", "EP 870.txt"),
+  "Wano" = c("EP 892.txt", "EP 914.txt", "EP 958.txt"),
+  "Dressrosa" = c("EP 663.txt", "EP 719.txt", "EP 726.txt")
+)
+
+# Process each episode in each saga
+episode_results <- list()
+
+for (saga in names(episodes)) {
+  episode_results[[saga]] <- lapply(episodes[[saga]], process_episode)
+}
+
+
+episode_results_summary <- lapply(episode_results, function(res) {
+  list(
+    Word_Frequency = head(res[[1]], 5),
+    NRC_Sentiment = res[[2]],
+    Bing_Sentiment = res[[3]]
+  )
+})
+print(episode_results_summary)
+```
+
+One previous assignment we looked at an example of tidy text using term frequency-inverse document frequency (TF-IDF). This would highlight the importance of words within each saga relative to the others. Higher TF-IDF scores indicate words that are highly specific to a saga.
+
+```{r setup4.1, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(ggplot2)
+library(tidytext)
+library(stringr)
+library(forcats)
+
+
+# Combine all word frequency data across sagas
+combined_word_counts <- bind_rows(
+  lapply(names(episode_results), function(saga) {
+    word_counts <- episode_results[[saga]][[1]]$word_counts
+    word_counts$saga <- saga  # Add saga column
+    word_counts
+  })
+)
+
+# Define stopwords to remove
+mystopwords <- tibble(word = c("eq", "co", "rc", "ac", "ak", "bn", 
+                               "fig", "file", "cg", "cb", "cm",
+                               "ab", "_k", "_k_", "_x"))
+
+# Remove stopwords
+cleaned_words <- anti_join(combined_word_counts, mystopwords, by = "word")
+
+# Calculate TF-IDF and process data for plotting
+plot_words <- cleaned_words %>%
+  bind_tf_idf(word, saga, n) %>%  # Calculate TF-IDF
+  mutate(word = str_remove_all(word, "_")) %>%  # Clean underscores from words
+  group_by(saga) %>% 
+  slice_max(tf_idf, n = 15, with_ties = FALSE) %>%  # Select top 15 words per saga
+  ungroup() %>%
+  mutate(word = fct_reorder(word, tf_idf))  # Reorder for better visualization
+
+# Plot the data
+ggplot(plot_words, aes(tf_idf, word, fill = saga)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~saga, ncol = 2, scales = "free") +
+  labs(x = "TF-IDF", y = NULL, title = "Top Words by TF-IDF Across Sagas") +
+  scale_fill_brewer(palette = "Set2") +  # Use a clean and distinct palette
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 16, face = "bold", hjust = 0.5),
+    strip.background = element_rect(fill = "grey85", color = "grey30"),  # Grey strip background
+    strip.text = element_text(size = 14, face = "bold"),  # Bold facet labels
+    axis.text.y = element_text(size = 10),  # Smaller y-axis text
+    axis.text.x = element_text(size = 10),  # Consistent x-axis text
+    panel.grid.major = element_blank(),  # Simplify gridlines
+    panel.grid.minor = element_blank()
+  )
+
+
+
+```
+
+_Dressrosa_
+
+The words "Doflamingo," "toys," and "underground" highlight the saga's focus on Doflamingo’s ruthless control over Dressrosa and his ties to the black market. Terms like "fruit" and "barrier" connect to key plot points, such as Sugar’s Toy-Toy Fruit, which allowed her to turn citizens into toys, enslaving them as part of the larger scheme to produce SMILE fruits.
+
+_Summit War_
+
+"Crew," "friends," and "erased" reflect powerful themes of camaraderie and loss, marking the saga as the last before the time skip and the crew’s two-year separation. "Kuma," "Sora," and "bastard" underscore pivotal emotional moments, such as Kuma’s secret role as a double agent for both the Warlords and the Revolutionary Army.
+
+_Whole Cake Island_
+
+The words "Sanji," "cook," and "father" center on Sanji’s personal struggles with his family and his significant role in the story. Terms like "food" and "speak" emphasize the saga’s unique focus on diplomacy, alliances, and the importance of cuisine.
+
+_Wano_
+
+"Sword," "blade," and "blood" reflect the saga’s samurai-centric themes and intense battles. Meanwhile, words like "funny" and "folks" mask the tragic truth of the SMILE fruits, whose devastating effects are revealed in this arc.
+
+The TF-IDF analysis highlights how each saga’s vocabulary reflects its core themes and narrative focus. Summit War and Whole Cake Island stand out with highly specific terms, emphasizing their distinct and emotionally charged storylines. In contrast, Dressrosa and Wano prioritize words tied to combat, leadership, and strategy, aligning with their action-packed and transformative arcs.
+
+__Bing & NRC Sentiment__
+
+By aggregating the Bing sentiment scores, I will be able to see the distribution of positive and negative sentiments across major sagas, providing a comparative overview of emotional tones in each arc. 
+
+```{r setup6, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# aggregate Bing sentiment results by saga
+combined_bing_sentiment <- bind_rows(
+  lapply(names(episode_results), function(saga) {
+    bind_rows(lapply(episode_results[[saga]], `[[`, "bing_sentiment")) %>%
+      group_by(sentiment) %>%
+      summarize(total_count = sum(n)) %>%
+      mutate(saga = saga)
+  })
+)
+
+# positive vs negative sentiment by saga
+ggplot(combined_bing_sentiment, aes(x = saga, y = total_count, fill = sentiment)) +
+  geom_col(position = "dodge") +
+  scale_fill_viridis_d(option = "D", begin = 0.2, end = 0.8) + 
+  labs(
+    title = "Positive vs Negative Sentiment Across Sagas",
+    x = "Saga",
+    y = "Sentiment Count"
+  ) +
+  theme_light() +
+  theme(
+    plot.title = element_text(size = 18, face = "bold", hjust = 0.5),
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 12),
+    axis.text.y = element_text(size = 12),
+    axis.title = element_text(size = 14, face = "bold"),
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 10)
+  )
+```
+
+The chart shows that negative sentiment consistently outweighs positive sentiment across all sagas, which aligns with the intense and often dramatic events that unfold.Dressrosa has the highest negative sentiment, possibly due to the dark themes of oppression, slavery, and rebellion. A close second in negative sentiment,is Sumit Wars reflecting the climactic and tragic events of this arc, including the loss of key characters.  Despite its focus on family conflict and betrayal, WCI has a relatively high positive sentiment, possibly reflecting lighter moments involving Sanji’s character arc and the unique culinary themes. While still predominantly negative, Wano shows a more balanced sentiment, likely due to moments of humor and cultural exploration alongside the grim revelations and battles.
+
+```{r setup7, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyr)
+library(ggplot2)
+
+# Combine NRC sentiment results for each saga
+combined_nrc_sentiment <- bind_rows(
+  lapply(names(episode_results), function(saga) {
+    bind_rows(lapply(episode_results[[saga]], `[[`, "nrc_sentiment")) %>%
+      group_by(sentiment) %>%
+      summarize(total_count = sum(n)) %>%
+      mutate(saga = saga)
+  })
+) %>%
+  filter(!sentiment %in% c("positive", "negative"))  # Exclude positive and negative sentiments
+
+library(RColorBrewer)
+
+ggplot(combined_nrc_sentiment, aes(x = sentiment, y = total_count, fill = saga)) +
+  geom_col(position = "dodge") +
+  scale_fill_brewer(palette = "Spectral") + 
+  labs(
+    title = "Key Sentiments Across Sagas",
+    x = "Sentiment",
+    y = "Count"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 18, face = "bold", hjust = 0.5),
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 12),
+    axis.text.y = element_text(size = 12),
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 10)
+  )
+
+```
+
+By breaking down emotional tones into these distinct key sentiments, the chart highlights the emotional complexity and narrative focus of each saga. Dressrosa stands out with high levels of anger, trust, and anticipation, which is helping draw together the themes of rebellion, hope, and camaraderie against oppression. Summit War is marked by significant fear, sadness, and anticipation. Wano features a balanced distribution, with peaks in anticipation, fear, and trust, aligning with the tension-filled buildup and alliances against Kaido. Whole Cake Island emphasizes trust and anticipation, highlighting the saga’s focus on alliances and resolutions, while joy reflects its culinary whimsy alongside underlying family conflicts. 
+
+```{r setup8, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+
+theme_mapping <- tibble(
+  sentiment = c("trust", "joy", "anticipation", "surprise","anger", "fear", "sadness", "disgust"),
+  theme = c("Bonds & Loyalty","Family & Unity","Dreams & Ambition","Freedom & Discovery","Oppression & Resistance", "Tyranny & Control","Sacrifice & Loss","Betrayal & Deception")
+)
+
+# map themes to df
+thematic_sentiments <- combined_nrc_sentiment %>%
+  inner_join(theme_mapping, by = "sentiment") %>%
+  group_by(theme, saga) %>%
+  summarize(total_count = sum(total_count), .groups = "drop")
+
+
+ggplot(thematic_sentiments, aes(x = saga, y = theme, size = total_count, color = theme)) +
+  geom_point(alpha = 0.7) +
+  scale_size_continuous(range = c(3, 15)) +
+  labs(
+    title = "Bubble Chart of Themes Across Sagas",
+    x = "Saga",
+    y = "Theme",
+    size = "Total Count"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 18, face = "bold", hjust = 0.5),
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 12)
+  )
+
+```
+
+Using sentiment analysis as a foundation, themes were derived by mapping specific emotions to broader narrative elements. This bubble chart visualizes, which I never seen used in class, demostrates the distribution of these themes across the different sagas. 
+
+_Bonds & Loyalty_
+
+Stands out as one of the most prominent themes across the sagas. This reflects the core relationships between the Straw Hat crew and their allies, emphasizing trust and camaraderie as central to the story. Time and again, the crew demonstrates unwavering loyalty, whether by risking their lives for one another or standing together against overwhelming odds.
+
+_Tyranny & Control_
+
+Highlights the darker aspects of One Piece, such as systemic discrimination, enslavement, and injustice. Arcs like "Dressrosa" and "Wano" showcase oppressive regimes, shedding light on the suffering of those under authoritarian rule. These sagas explore the consequences of such tyranny, as well as the resilience and determination of those who rise against it. By focusing on these struggles, the series provides a critique of power dynamics and the fight for freedom, adding a layer of depth to its narrative.
+
+_Oppression & Resistance_
+
+Further complements the narrative of One Piece by showcasing the ongoing battles against corrupt systems and oppressive forces. Whether it is the Revolutionary Army’s defiance of the World Government or the Straw Hats liberating oppressed communities, resistance is a central motif. This theme is especially prominent in arcs like "Summit War," where characters’ sacrifices emphasize the high stakes and moral weight of their struggles against injustice.
+
+_Dreams & Ambition_
+
+Another recurring theme, representing the driving force behind many characters’ motivations. From Luffy’s quest to become the Pirate King to the personal aspirations of each crew member, this theme underscores the importance of determination and perseverance. This ambition is evident across sagas, particularly in arcs that delve into character backstories (WCI), reminding viewers that dreams are a source of strength even in the face of adversity.
+
+_Regression_
+
+I am using a regression to explore my reserach question to see how much does theme explain the variation in the average rating.In this analysis, the various themes serve as independent or predictor variables, while the average rating of each episode acts as the dependent variable. The goal is to see if narrative elements drive One Piece's enduring appeal.
+
+```{r setup9, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+#combine theme and ep rating
+theme_ep <- thematic_sentiments %>%
+  left_join(top_episodes_sagas, by = "saga")
+
+head(theme_ep)
+
+theme_ep$theme <- as.factor(theme_ep$theme)
+
+theme_rating_model <- lm(average_rating ~ theme + total_count, data = theme_ep)
+summary(theme_rating_model)
+```
+This model indicates that several themes have a significant positive impact on ratings. For instance, episodes with the theme "Bonds & Loyalty" see an average increase of 0.47 points in ratings compared to the baseline theme, while "Dreams & Ambition" and "Tyranny & Control" contribute 0.33 points and 0.37 points, respectively. On the other hand, "Freedom & Discovery" does not significantly affect ratings (p = 0.19), suggesting it may not resonate as strongly with audiences. Additionally, the total count of themes in an episode shows a small but significant negative effect, with each additional theme count reducing ratings by 0.0088 points on average (p < 0.001). The model explains 30% of the variation in episode ratings (adjusted R-squared = 0.24), emphasizing the importance of well-chosen thematic focus in driving viewer engagement, while other factors should be considered to the animes long success. 
+
+__MANOVA__
+
+A one-way ANOVA, tests one IV with two or more groups on a single DV.
+A factorial ANOVA: Tests two or more IVs on a single DV.
+A MANOVA: Tests two or more DVs against one or more IVs. 
+
+MANOVA, Multivariate Analysis of Variance, is a statistical test used to determine if there are any differences between groups in terms of multiple dependent variables at the same time. 
+
+In my test the variables are: 
+(DVs): average_rating and total_count
+(IVs): theme and saga
+
+```{r setup10, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#multiple ratings by theme
+manova_model <- manova(cbind(average_rating, total_count) ~ theme + saga, data = theme_ep)
+summary(manova_model)
+```
+The MANOVA analysis utilizes Pillai’s trace, a statistic that ranges from 0 to 1, where higher values indicate a stronger contribution of the independent variables (theme and saga) to the model. In this analysis:
+
+Theme has a Pillai's trace value of 0.897, indicating a strong relationship with the dependent variables, average_rating and total_count.
+Saga has a Pillai's trace value of 0.810, also suggesting a strong influence on the dependent variables.
+The F-tests for both independent variables evaluate whether they have statistically significant effects on the dependent variables:
+
+The F-statistic for theme is 9.89, and for saga, it is 19.305.
+Both are highly statistically significant (p-values < 0.001), which means that both theme and saga have a substantial and statistically significant impact on the dependent variables at an alpha level of 0.05.
+These results indicate that theme and saga significantly influence average_rating and total_count, and the effects are both strong and meaningful.
+
+However, when examining the denominator degrees of freedom (85), it is clear that there is still unexplained variance in the dependent variables that is not accounted for by either theme or saga. This suggests that while theme and saga are important contributors, additional factors may be influencing the average ratings and episode counts, warranting further investigation.
+
+__Pairwise__
+
+A pairwise comparisons must be completed after MANOVA to understand specifically how the independent variables differ in their effects on the dependent variables. 
+```{r setup10.1, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+pairwise_theme <- pairwise.t.test(theme_ep$average_rating, theme_ep$theme)
+pairwise_theme
+
+```
+These results indicate where statistically significant differences exist between the themes in terms of average rating. For example, Bonds & Loyalty  with Betrayal & Deception is 1. The Holm adjustment ensures that the findings are not due to chance,so no false positives (type I error) and the "1" indicates significant differences between the pairwise comparisons.
+
+__Conclusion__
+
+In conclusion, the emotional tone and thematic depth of One Piece are key factors in its enduring popularity and audience engagement. The series' ability to balance complex emotional narratives with rich, evolving themes has contributed to its growth over the years, as evidenced by the steadily increasing average ratings across its sagas. Themes like Bonds & Loyalty, Tyranny & Control, and Dreams & Ambition resonate strongly with viewers, driving higher ratings and engagement. The statistical analysis further underscores the significant impact of both theme and saga on episode ratings, revealing how these elements work together to create a compelling, emotionally charged viewing experience that keeps audiences invested. However, while theme and saga play substantial roles, additional factors may also influence ratings, suggesting areas for further exploration in understanding the show's long-term success.
+
+__Further Analysis__
+
+This project offers numerous opportunities for expansion and deeper exploration:
+
+_Granular Episode-Level Analysis_
+
+Conduct detailed analyses at the individual episode level, by arc, and across entire sagas to uncover more specific patterns in emotional tone and thematic development.
+
+_Character-Centric Analysis_
+
+Explore the emotional depth and thematic contributions of key characters, examining how their personal arcs influence audience engagement and ratings.
+
+_Comparative Analysis with Other Animes_
+
+Compare One Piece's emotional tone and thematic elements with those of other long-running anime series, such as Bleach, to identify unique storytelling strategies and viewer engagement trends.
+
+_Time-Series Analysis of Anime Trends_
+
+Perform a time-series analysis to examine how trends in emotional tone, themes, and audience ratings have evolved over time, offering insights into the broader cultural and industry shifts within the anime landscape.
+
+
+_Citations_
+
+GeeksforGeeks. "Understanding TF-IDF (Term Frequency-Inverse Document Frequency)." Accessed December 6, 2024. https://www.geeksforgeeks.org/understanding-tf-idf-term-frequency-inverse-document-frequency/.
+
+One Piece Wiki. "One Piece Wiki." Fandom. Accessed December 6, 2024. https://onepiece.fandom.com/wiki/One_Piece_Wiki.
+
+Ratingraph. "One Piece Ratings." Accessed December 6, 2024. https://www.ratingraph.com/tv-shows/one-piece-ratings-17673/.
+
+Silge, Julia, and David Robinson. Text Mining with R: A Tidy Approach. O’Reilly Media. Licensed under Creative Commons Attribution-NonCommercial-ShareAlike 3.0 United States License. Accessed December 6, 2024. https://www.tidytextmining.com/.
+
+Sonkin, Phillip. Sentiment Analysis: Welcome to Text Mining with R. Accessed December 6, 2024. https://bookdown.org/psonkin18/berkshire/sentiment.html.
+
+Stack Exchange. "What Particular Measure to Use: Multiple Regression or MANOVA?" Cross Validated, August 2, 2012. Accessed December 6, 2024. https://stats.stackexchange.com/questions/69145/what-particular-measure-to-use-multiple-regression-or-manova.
+
+Statistic How To. "Pillai's Trace." Accessed December 6, 2024. https://www.statisticshowto.com/pillais-trace/.
+
+Statistics Solutions. "One-Way MANOVA." Accessed December 6, 2024. https://www.statisticssolutions.com/free-resources/directory-of-statistical-analyses/one-way-manova/.
+
+_ChatGBT Prompts_
+
+How to create a function to process text files for sentiment analysis?
+How affective are bubble charts? 
+What are possible solutions to this error: Error in if (anova_p_value <- summary(theme_anova)[[1]]["Pr(>F)"][1] <  : 
+  the condition has length > 1
+I want to examine theme and average rating would a linear regression or multivariable regression would be the best?
